@@ -20,7 +20,7 @@ class MyBot(discord.Client):
     async def on_ready(self):
         print(f'Connected as {self.user}')
         await self.tree.sync()
-        await db.setup_db()
+        await db.setup()
         weekly_forum_update.start(bot)
 
 
