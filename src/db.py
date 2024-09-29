@@ -7,7 +7,6 @@ async def setup_db():
         await db.execute('''CREATE TABLE IF NOT EXISTS servers (
                             server_id INTEGER PRIMARY KEY)''')
         await db.execute('''CREATE TABLE IF NOT EXISTS categories (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
                             server_id INTEGER,
                             category_type TEXT,
                             item_id INTEGER,

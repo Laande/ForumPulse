@@ -14,8 +14,8 @@ async def weekly_forum_update(bot):
         servers = await db.execute("SELECT server_id FROM servers")
         server_ids = [row[0] for row in await servers.fetchall()]
 
-        print(f"Updating {server_id}")
         for server_id in server_ids:
+            print(f"Updating {server_id}")
             await process_server(db, server_id, bot)
         
         print("All servers are up")
@@ -46,7 +46,8 @@ async def process_server(db, server_id, bot):
 
 async def update_category(category: discord.CategoryChannel, bot):
     for channel in category.channels:
-        await update_forum(channel, bot)
+        if not isinstance(channel, discord.ForumChannel):
+            await update_forum(channel, bot)
 
 
 async def update_forum(forum: discord.ForumChannel, bot):
