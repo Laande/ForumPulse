@@ -16,10 +16,17 @@ async def setup():
 
 async def add_element(server_id, category_type, item_id):
     async with aiosqlite.connect(DATABASE) as db:
+        async with db.execute("SELECT 1 FROM categories WHERE server_id = ? AND item_id = ?", 
+                              (server_id, item_id)) as cursor:
+            exists = await cursor.fetchone()
+            if exists:
+                return False
+
         await db.execute("INSERT OR IGNORE INTO servers (server_id) VALUES (?)", (server_id,))
         await db.execute("INSERT INTO categories (server_id, category_type, item_id) VALUES (?, ?, ?)",
                          (server_id, category_type, item_id))
         await db.commit()
+        return True
 
 
 async def get_channels(server_id):

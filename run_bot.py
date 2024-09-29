@@ -27,6 +27,14 @@ class MyBot(discord.Client):
 bot = MyBot()
 
 
+async def add_to_db(server_id, channel_type, channel_id):
+    res = msg = await add_to_db(server_id, channel_type, channel_id)
+    if res:
+        return f"<#{channel_id}> added."
+    else:
+        return f"<#{channel_id}> already in the db."
+
+
 @bot.tree.command(name="add_category", description="Add a category to monitor")
 @app_commands.describe(category="The category to add (use #channel or ID)")
 @app_commands.guild_only()
@@ -35,8 +43,8 @@ async def add_category(interaction: discord.Interaction, category: str):
     category_channel = await get_channel(category, bot)
 
     if isinstance(category_channel, discord.CategoryChannel):
-        await db.add_element(interaction.guild.id, 'category', category_channel.id)
-        await interaction.response.send_message(f"<#{category_channel.id}> added.")
+        msg = await add_to_db(interaction.guild.id, 'category', category_channel.id)
+        await interaction.response.send_message(msg)
     else:
         await interaction.response.send_message("The provided category is invalid or not a category.", ephemeral=True)
 
@@ -59,8 +67,8 @@ async def add_forum(interaction: discord.Interaction, forum: str):
     forum_channel = await get_channel(forum, bot)
 
     if isinstance(forum_channel, discord.ForumChannel):
-        await db.add_element(interaction.guild.id, 'forum', forum_channel.id)
-        await interaction.response.send_message(f"<#{forum_channel.id}> added.")
+        msg = await add_to_db(interaction.guild.id, 'forum', forum_channel.id)
+        await interaction.response.send_message(msg)
     else:
         await interaction.response.send_message("The provided forum is invalid or not a forum.", ephemeral=True)
 
@@ -83,8 +91,8 @@ async def add_post(interaction: discord.Interaction, post: str):
     post_channel = await get_channel(post, bot)
 
     if isinstance(post_channel, discord.threads.Thread):
-        await db.add_element(interaction.guild.id, 'post', post_channel.id)
-        await interaction.response.send_message(f"<#{post_channel.id}> added.")
+        msg = await add_to_db(interaction.guild.id, 'post', post_channel.id)
+        await interaction.response.send_message(msg)
     else:
         await interaction.response.send_message("The provided post is invalid or not a post.", ephemeral=True)
 
