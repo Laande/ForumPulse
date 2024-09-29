@@ -1,5 +1,6 @@
 import os
 import re
+import discord
 from .config import TOKEN_FILE
 
 def load_token() -> str:
@@ -19,7 +20,7 @@ def load_token() -> str:
     return token
 
 
-def save_token(f, token: str):
+def save_token(f, token: str) -> None:
     if token:
         f.write(token)
         print("Token has been saved.")
@@ -27,9 +28,17 @@ def save_token(f, token: str):
         print(f"Token not provided. You can manually add it in the '{TOKEN_FILE}' file.")
 
 
-async def get_channel(channel_input: str, bot):
+def extract_id(channel_input: str) -> int:
     if channel_input.isdigit():
-        return bot.get_channel(int(channel_input))
+        return int(channel_input)
     else:
         match = re.match(r'<#(\d+)>', channel_input)
-        return bot.get_channel(int(match.group(1))) if match else None
+        return int(match.group(1)) if match else None
+
+
+async def get_channel(channel_input: str, bot: discord.Client) -> discord.abc.GuildChannel:
+    channel_id = extract_id(channel_input)
+    if channel_id is None:
+        return None
+    else:
+        return await bot.fetch_channel(channel_id)

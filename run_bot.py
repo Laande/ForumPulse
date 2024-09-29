@@ -1,11 +1,10 @@
 import discord
 from discord import app_commands
-import aiosqlite
 
 from src.config import DATABASE, AUTHORIZED
-from src.utils import load_token, get_channel
-from src.db import setup_db, add_element
+from src.utils import load_token, get_channel, extract_id
 from src.update import weekly_forum_update
+from src import db
 
 
 class MyBot(discord.Client):
@@ -21,7 +20,7 @@ class MyBot(discord.Client):
     async def on_ready(self):
         print(f'Connected as {self.user}')
         await self.tree.sync()
-        await setup_db()
+        await db.setup_db()
         weekly_forum_update.start(bot)
 
 
@@ -31,11 +30,12 @@ bot = MyBot()
 @bot.tree.command(name="add_category", description="Add a category to monitor")
 @app_commands.describe(category="The category to add (use #channel or ID)")
 @app_commands.guild_only()
+@app_commands.checks.has_permissions(manage_channels=True)
 async def add_category(interaction: discord.Interaction, category: str):
     category_channel = await get_channel(category, bot)
 
     if isinstance(category_channel, discord.CategoryChannel):
-        add_element(interaction.guild.id, 'category', category_channel.id)
+        await db.add_element(interaction.guild.id, 'category', category_channel.id)
         await interaction.response.send_message(f"<#{category_channel.id}> added.")
     else:
         await interaction.response.send_message("The provided category is invalid or not a category.", ephemeral=True)
@@ -54,11 +54,12 @@ async def autocomplete_categories(interaction: discord.Interaction, current: str
 @bot.tree.command(name="add_forum", description="Add a specific forum to monitor")
 @app_commands.describe(forum="The forum to add (use #channel or ID)")
 @app_commands.guild_only()
+@app_commands.checks.has_permissions(manage_channels=True)
 async def add_forum(interaction: discord.Interaction, forum: str):
     forum_channel = await get_channel(forum, bot)
 
     if isinstance(forum_channel, discord.ForumChannel):
-        add_element(interaction.guild.id, 'forum', forum_channel.id)
+        await db.add_element(interaction.guild.id, 'forum', forum_channel.id)
         await interaction.response.send_message(f"<#{forum_channel.id}> added.")
     else:
         await interaction.response.send_message("The provided forum is invalid or not a forum.", ephemeral=True)
@@ -77,11 +78,12 @@ async def autocomplete_forum(interaction: discord.Interaction, current: str):
 @bot.tree.command(name="add_post", description="Add a specific post to monitor")
 @app_commands.describe(post="The post to add (use #channel or ID)")
 @app_commands.guild_only()
+@app_commands.checks.has_permissions(manage_channels=True)
 async def add_post(interaction: discord.Interaction, post: str):
     post_channel = await get_channel(post, bot)
 
     if isinstance(post_channel, discord.threads.Thread):
-        add_element(interaction.guild.id, 'post', post_channel.id)
+        await db.add_element(interaction.guild.id, 'post', post_channel.id)
         await interaction.response.send_message(f"<#{post_channel.id}> added.")
     else:
         await interaction.response.send_message("The provided post is invalid or not a post.", ephemeral=True)
@@ -103,14 +105,39 @@ async def autocomplete_post(interaction: discord.Interaction, current: str):
     ]
 
 
-@app_commands.check(lambda interaction: interaction.user.id in AUTHORIZED)
-@bot.tree.command(name="eval")
-async def eval_cmd(interaction: discord.Interaction, code: str):
-    try:
-        result = eval(code)
-        await interaction.response.send_message(f"```\n{result}\n```")
-    except Exception as e:
-        await interaction.response.send_message(f"```\n{e}\n```")
+@bot.tree.command(name="list_channels", description="List all channels.")
+@app_commands.guild_only()
+@app_commands.checks.has_permissions(manage_channels=True)
+async def list_channels(interaction: discord.Interaction):
+    channels_by_category = await db.get_channels(interaction.guild.id)
+
+    response = ""
+
+    for category_type, item_ids in channels_by_category.items():
+        if item_ids:
+            response += f"**{category_type.capitalize()}**:\n"
+            for item_id in item_ids:
+                response += f"- <#{item_id}>\n"
+            response += "\n"
+
+    if not any(channels_by_category.values()):
+        response = "No channel found."
+
+    await interaction.response.send_message(response)
+
+
+@bot.tree.command(name="remove_channel", description="Remove a channel.")
+@app_commands.describe(channel="The channel to remove (use #channel or ID)")
+@app_commands.guild_only()
+@app_commands.checks.has_permissions(manage_channels=True)
+async def remove_channel(interaction: discord.Interaction, channel: str):
+    channel = extract_id(channel)
+    
+    if not await db.channel_exists(interaction.guild.id, channel.id):
+        await interaction.response.send_message(f"Channel <#{channel.id}> (`{channel.id}`) not found in the database.")
+    else:
+        await db.remove_channel(interaction.guild.id, channel.id)
+        await interaction.response.send_message(f"<#{channel.id}> has been removed.")
 
 
 @bot.tree.command(name="info", description="Get information about the bot and its functionalities.")
@@ -120,10 +147,22 @@ async def info(interaction: discord.Interaction):
         "**Commands:**\n"
         "- </add_category:1290055778031632506>: Add all forums in the category.\n"
         "- </add_forum:1290055778031632507>: Add a specific forum.\n"
-        "- </add_post:1290055778031632508>: Add a specific.\n\n"
+        "- </add_post:1290055778031632508>: Add a specific post.\n"
+        "- </list_channels:1290086788114944062>: List all channels in the db.\n"
+        "- </remove_channel:1290086788114944063>: Remove a channel from the db.\n\n"
         "The bot runs weekly to add a reaction to all monitored posts and then remove it."
     )
     await interaction.response.send_message(info_message)
+
+
+@app_commands.check(lambda interaction: interaction.user.id in AUTHORIZED)
+@bot.tree.command(name="eval")
+async def eval_cmd(interaction: discord.Interaction, code: str):
+    try:
+        result = eval(code)
+        await interaction.response.send_message(f"```\n{result}\n```")
+    except Exception as e:
+        await interaction.response.send_message(f"```\n{e}\n```")
 
 
 if __name__ == "__main__":
