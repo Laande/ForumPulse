@@ -2,7 +2,7 @@ import discord
 import aiosqlite
 import asyncio
 from discord.ext import tasks
-from .config import DATABASE, RUN_EVERY
+from .config import DATABASE, RUN_EVERY, EMOJI
 
 
 already_check = set()
@@ -46,7 +46,7 @@ async def process_server(db, server_id, bot):
 
 async def update_category(category: discord.CategoryChannel, bot):
     for channel in category.channels:
-        if not isinstance(channel, discord.ForumChannel):
+        if isinstance(channel, discord.ForumChannel):
             await update_forum(channel, bot)
 
 
@@ -64,9 +64,9 @@ async def update_post(thread_id: int, bot: discord.Client):
     thread = await bot.fetch_channel(thread_id)
     message = await thread.fetch_message(thread_id)
     
-    await message.add_reaction("👍")
+    await message.add_reaction(EMOJI)
     await asyncio.sleep(2)
-    await message.remove_reaction("👍", bot.user)
+    await message.remove_reaction(EMOJI, bot.user)
     
     print(f"Post {thread_id} updated.")
     already_check.add(thread_id)
