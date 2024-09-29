@@ -165,10 +165,19 @@ async def info(interaction: discord.Interaction):
 
 @app_commands.check(lambda interaction: interaction.user.id in AUTHORIZED)
 @bot.tree.command(name="eval")
+@app_commands.describe(code="The code to evaluate")
 async def eval_cmd(interaction: discord.Interaction, code: str):
     try:
-        result = eval(code)
-        await interaction.response.send_message(f"```\n{result}\n```")
+        result = str(eval(code))
+
+        if len(result) <= 1900:
+            await interaction.response.send_message(f"```\n{result}\n```")
+        else:
+            await interaction.response.send_message("Result too long, sending in multiple messages...")
+            chunks = [result[i:i + 1900] for i in range(0, len(result), 1900)]
+            for chunk in chunks:
+                await interaction.followup.send(f"```\n{chunk}\n```")
+
     except Exception as e:
         await interaction.response.send_message(f"```\n{e}\n```")
 
