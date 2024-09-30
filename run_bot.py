@@ -28,7 +28,7 @@ bot = MyBot()
 
 
 async def add_to_db(server_id, channel_type, channel_id):
-    res = msg = await add_to_db(server_id, channel_type, channel_id)
+    res = await add_to_db(server_id, channel_type, channel_id)
     if res:
         return f"<#{channel_id}> added."
     else:
