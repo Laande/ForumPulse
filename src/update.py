@@ -3,6 +3,7 @@ import aiosqlite
 import asyncio
 from discord.ext import tasks
 from .config import DATABASE, RUN_EVERY, EMOJI
+from .utils import get_channel
 
 
 already_check = set()
@@ -70,4 +71,40 @@ async def update_post(thread_id: int, bot: discord.Client):
     
     print(f"Post {thread_id} updated.")
     already_check.add(thread_id)
-    
+
+
+async def get_monitored_posts(bot):
+    post_set = set()
+
+    async with aiosqlite.connect(DATABASE) as db:
+        async with db.execute("SELECT item_id, category_type FROM categories") as cursor:
+            async for row in cursor:
+                item_id, category_type = row
+                channel = await get_channel(item_id, bot)
+
+                if category_type == 'forum':
+                    for thread in channel.threads:
+                        post_set.add(thread.id)
+
+                elif category_type == 'category':
+                    for forum in channel.channels:
+                        if isinstance(forum, discord.ForumChannel):
+                            for thread in forum.threads:
+                                post_set.add(thread.id)
+
+                elif category_type == 'post':
+                    post_set.add(item_id)
+
+    return post_set
+
+@tasks.loop(hours=1)
+async def update_bot_status(bot):
+    await bot.wait_until_ready()
+    post_set = await get_monitored_posts(bot)
+
+    total_posts = len(post_set)
+    await bot.change_presence(activity=discord.Activity(
+        type=discord.ActivityType.watching, 
+        name=f"over {total_posts} posts"
+    ))
+    print(f"Bot status updated to watching over {total_posts} posts.")

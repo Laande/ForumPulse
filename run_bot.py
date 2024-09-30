@@ -3,7 +3,7 @@ from discord import app_commands
 
 from src.config import DATABASE, AUTHORIZED
 from src.utils import load_token, get_channel, extract_id
-from src.update import weekly_forum_update
+from src.update import weekly_forum_update, update_bot_status
 from src import db
 
 
@@ -22,6 +22,7 @@ class MyBot(discord.Client):
         await self.tree.sync()
         await db.setup()
         weekly_forum_update.start(bot)
+        update_bot_status.start(bot)
 
 
 bot = MyBot()

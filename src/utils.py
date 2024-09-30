@@ -37,8 +37,9 @@ def extract_id(channel_input: str) -> int:
 
 
 async def get_channel(channel_input: str, bot: discord.Client) -> discord.abc.GuildChannel:
-    channel_id = extract_id(channel_input)
-    if channel_id is None:
+    if not isinstance(channel_input, int):
+        channel_input = extract_id(channel_input)
+    if channel_input is None:
         return None
     else:
-        return await bot.fetch_channel(channel_id)
+        return await bot.fetch_channel(channel_input)
