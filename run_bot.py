@@ -167,8 +167,9 @@ async def info(interaction: discord.Interaction):
 @app_commands.check(lambda interaction: interaction.user.id in AUTHORIZED)
 @bot.tree.command(name="refresh_status", description="Refresh the status of the bot.")
 async def refresh_status(interaction: discord.Interaction):
-    update_bot_status.start(bot)
-    await interaction.response.send_message("Bot status refreshed.")
+    await interaction.response.defer()
+    await update_bot_status(bot)
+    await interaction.followup.send("Bot status updated.")
 
 
 
