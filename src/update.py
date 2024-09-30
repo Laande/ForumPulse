@@ -22,9 +22,46 @@ async def weekly_forum_update(bot):
         print("All servers are up")
 
 
+async def check_stil_exist(db, server_id, bot):
+    async with aiosqlite.connect(DATABASE) as db:
+        async with db.execute("SELECT server_id FROM servers") as cursor:
+            servers = await cursor.fetchall()
+        
+        for (server_id,) in servers:
+            guild = bot.get_guild(server_id)
+
+            if not guild:
+                await remove_server(server_id, db)
+                continue
+
+            async with db.execute("SELECT item_id FROM categories WHERE server_id = ?", (server_id,)) as cursor:
+                channels = await cursor.fetchall()
+
+            for (channel_id,) in channels:
+                channel = guild.get_channel(channel_id)
+
+                if not channel:
+                    await remove_channel_from_db(server_id, channel_id, db)
+
+        await db.commit()
+
+
+async def remove_server(server_id, db):
+    await db.execute("DELETE FROM servers WHERE server_id = ?", (server_id,))
+    await db.execute("DELETE FROM categories WHERE server_id = ?", (server_id,))
+    print(f"Server {server_id} removed from the database.")
+
+
+async def remove_channel_from_db(server_id, channel_id, db):
+    await db.execute("DELETE FROM categories WHERE server_id = ? AND item_id = ?", (server_id, channel_id))
+    print(f"Channel {channel_id} removed from the database for server {server_id}.")
+
+
 async def process_server(db, server_id, bot):
     global already_check
     already_check = set()
+    
+    await check_stil_exist(db, server_id, bot)
     
     async with db.execute("SELECT item_id FROM categories WHERE server_id = ? AND category_type = 'post'", (server_id,)) as cursor:
         posts = await cursor.fetchall()
