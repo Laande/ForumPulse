@@ -141,11 +141,11 @@ async def list_channels(interaction: discord.Interaction):
 async def remove_channel(interaction: discord.Interaction, channel: str):
     channel = extract_id(channel)
     
-    if not await db.channel_exists(interaction.guild.id, channel.id):
-        await interaction.response.send_message(f"Channel <#{channel.id}> (`{channel.id}`) not found in the database.")
+    if not await db.channel_exists(interaction.guild.id, channel):
+        await interaction.response.send_message(f"Channel <#{channel}> (`{channel}`) not found in the database.")
     else:
-        await db.remove_channel(interaction.guild.id, channel.id)
-        await interaction.response.send_message(f"<#{channel.id}> has been removed.")
+        await db.remove_channel(interaction.guild.id, channel)
+        await interaction.response.send_message(f"<#{channel}> has been removed.")
 
 
 @bot.tree.command(name="info", description="Get information about the bot and its functionalities.")
