@@ -2,3 +2,4 @@ token.txt
 bot_db.sqlite
 
 __pycache__
+tools/
