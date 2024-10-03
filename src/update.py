@@ -1,25 +1,31 @@
 import discord
 import aiosqlite
 import asyncio
+import datetime
 from discord.ext import tasks
-from .config import DATABASE, RUN_EVERY, EMOJI
+from .config import DATABASE, RUN_EVERY, EMOJI, BOT_GUILD_ID, BOT_CHANNEL_ID
 from .utils import get_channel
 
 
 already_check = set()
 
 
-@tasks.loop(hours=RUN_EVERY)
+@tasks.loop(hours=24)
 async def weekly_forum_update(bot):
+    today = datetime.utcnow().weekday() 
+    if today != RUN_EVERY:
+        return
+
     async with aiosqlite.connect(DATABASE) as db:
         servers = await db.execute("SELECT server_id FROM servers")
         server_ids = [row[0] for row in await servers.fetchall()]
 
         for server_id in server_ids:
-            print(f"Updating {server_id}")
             await process_server(db, server_id, bot)
-        
-        print("All servers are up")
+    
+    if guild := bot.get_guild(BOT_GUILD_ID):
+        if channel := guild.get_channel(BOT_CHANNEL_ID):
+            await channel.send(f"Weekly forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 0 else ''}.")
 
 
 async def check_stil_exist(db, server_id, bot):
