@@ -1,27 +1,23 @@
 import discord
 import aiosqlite
 import asyncio
-import datetime
+from datetime import time, timezone
 from discord.ext import tasks
-from .config import DATABASE, RUN_EVERY, EMOJI, BOT_GUILD_ID, BOT_CHANNEL_ID
+from .config import DATABASE, EMOJI, BOT_GUILD_ID, BOT_CHANNEL_ID
 from .utils import get_channel
 
 
 already_check = set()
 
 
-@tasks.loop(hours=24)
+@tasks.loop(time=time(12, 0, tzinfo=timezone.utc))  # Wednesday 12:00 PM (UTC)
 async def weekly_forum_update(bot):
-    today = datetime.datetime.now().weekday()
-    if today != RUN_EVERY:
-        return
-
     async with aiosqlite.connect(DATABASE) as db:
         servers = await db.execute("SELECT server_id FROM servers")
         server_ids = [row[0] for row in await servers.fetchall()]
 
         for server_id in server_ids:
-            await process_server(db, server_id, bot)
+            await process_server(server_id, bot)
     
     if guild := bot.get_guild(BOT_GUILD_ID):
         if channel := guild.get_channel(BOT_CHANNEL_ID):
@@ -63,29 +59,31 @@ async def remove_channel_from_db(server_id, channel_id, db):
     print(f"Channel {channel_id} removed from the database for server {server_id}.")
 
 
-async def process_server(db, server_id, bot):
+async def process_server(server_id, bot):
     global already_check
     already_check = set()
     
-    await check_stil_exist(db, server_id, bot)
     
-    async with db.execute("SELECT item_id FROM categories WHERE server_id = ? AND category_type = 'post'", (server_id,)) as cursor:
-        posts = await cursor.fetchall()
-        for post in posts:
-            post_id = post[0]
-            await update_post(post_id, bot)
+    async with aiosqlite.connect(DATABASE) as db:
+        await check_stil_exist(db, server_id, bot)
+        
+        async with db.execute("SELECT item_id FROM categories WHERE server_id = ? AND category_type = 'post'", (server_id,)) as cursor:
+            posts = await cursor.fetchall()
+            for post in posts:
+                post_id = post[0]
+                await update_post(post_id, bot)
 
-    async with db.execute("SELECT item_id FROM categories WHERE server_id = ? AND category_type = 'forum'", (server_id,)) as cursor:
-        forums = await cursor.fetchall()
-        for forum in forums:
-            forum_id = forum[0]
-            await update_forum(bot.get_channel(forum_id), bot)
+        async with db.execute("SELECT item_id FROM categories WHERE server_id = ? AND category_type = 'forum'", (server_id,)) as cursor:
+            forums = await cursor.fetchall()
+            for forum in forums:
+                forum_id = forum[0]
+                await update_forum(bot.get_channel(forum_id), bot)
 
-    async with db.execute("SELECT item_id FROM categories WHERE server_id = ? AND category_type = 'category'", (server_id,)) as cursor:
-        categories = await cursor.fetchall()
-        for category in categories:
-            category_id = category[0]
-            await update_category(bot.get_channel(category_id), bot)
+        async with db.execute("SELECT item_id FROM categories WHERE server_id = ? AND category_type = 'category'", (server_id,)) as cursor:
+            categories = await cursor.fetchall()
+            for category in categories:
+                category_id = category[0]
+                await update_category(bot.get_channel(category_id), bot)
 
 
 async def update_category(category: discord.CategoryChannel, bot):
@@ -111,8 +109,6 @@ async def update_post(thread_id: int, bot: discord.Client):
     await message.add_reaction(EMOJI)
     await asyncio.sleep(2)
     await message.remove_reaction(EMOJI, bot.user)
-    
-    print(f"Post {thread_id} updated.")
     already_check.add(thread_id)
 
 

@@ -3,7 +3,7 @@ from discord import app_commands
 
 from src.config import DATABASE, AUTHORIZED
 from src.utils import load_token, get_channel, extract_id
-from src.update import weekly_forum_update, update_bot_status
+from src.update import weekly_forum_update, update_bot_status, process_server
 from src import db
 
 
@@ -171,6 +171,13 @@ async def refresh_status(interaction: discord.Interaction):
     await update_bot_status(bot)
     await interaction.followup.send("Bot status updated.")
 
+
+@app_commands.check(lambda interaction: interaction.user.id in AUTHORIZED)
+@bot.tree.command(name="run_update", description="Run the update script.")
+async def refresh_status(interaction: discord.Interaction):
+    await interaction.response.defer()
+    await process_server(interaction.guild.id, bot)
+    await interaction.followup.send("Server update completed.")
 
 
 if __name__ == "__main__":
