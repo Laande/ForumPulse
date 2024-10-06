@@ -12,7 +12,7 @@ already_check = set()
 
 @tasks.loop(hours=24)
 async def weekly_forum_update(bot):
-    today = datetime.utcnow().weekday() 
+    today = datetime.datetime.now().weekday()
     if today != RUN_EVERY:
         return
 
