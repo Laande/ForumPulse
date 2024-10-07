@@ -25,18 +25,18 @@ class MyBot(discord.Client):
         update_bot_status.start(bot)
         
     async def on_guild_join(self, guild: discord.Guild):
-        if guild := bot.get_guild(BOT_GUILD_ID):
-            if channel := guild.get_channel(SERVER_CHANNEL_ID):
-                await channel.send(
+        if guild_log := bot.get_guild(BOT_GUILD_ID):
+            if channel_log := guild_log.get_channel(SERVER_CHANNEL_ID):
+                await channel_log.send(
                     f"✅ Joined a new server: **{guild.name}** (ID: {guild.id})\n"
                     f"👥 Members: {guild.member_count}\n"
                     f"📁 Channels: {len(guild.channels)}"
                 )
 
     async def on_guild_remove(self, guild: discord.Guild):
-        if guild := bot.get_guild(BOT_GUILD_ID):
-            if channel := guild.get_channel(SERVER_CHANNEL_ID):
-                await channel.send(f"❌ Removed from server: **{guild.name}** (ID: {guild.id})")
+        if guild_log := bot.get_guild(BOT_GUILD_ID):
+            if channel_log := guild_log.get_channel(SERVER_CHANNEL_ID):
+                await channel_log.send(f"❌ Removed from server: **{guild.name}** (ID: {guild.id})")
 
 
 bot = MyBot()
