@@ -35,6 +35,7 @@ This Privacy Policy outlines the data collection and usage practices of the *For
 *ForumPulse* collects and processes the following types of data:
 - **Server and Channel Information**: The bot collects basic information such as server IDs, channel IDs, and category IDs to monitor and provide its service.
 - **User Interaction Data**: The bot logs interactions related to the channels and posts it monitors (such as additions or removals of categories, forums, or posts).
+- **Server Join/Leave Logs**: The bot logs when it is added to or removed from a server, including server names, ID, channels count and members count.
 
 *ForumPulse* does not store or access any personal information such as usernames, email addresses, or message content.
 
@@ -42,6 +43,7 @@ This Privacy Policy outlines the data collection and usage practices of the *For
 The data collected is used solely to provide, maintain, and improve the Service. This includes:
 - Monitoring forums, categories, and posts.
 - Storing server and channel IDs to allow continuous monitoring.
+- Logging server join and leave events to track where the bot is active.
 
 ### 3. Data Sharing and Disclosure
 *ForumPulse* does not sell, trade, or otherwise transfer your data to third parties. However, we may disclose your information if required to do so by law.

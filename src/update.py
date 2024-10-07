@@ -3,7 +3,7 @@ import aiosqlite
 import asyncio
 from datetime import time, timezone
 from discord.ext import tasks
-from .config import DATABASE, EMOJI, BOT_GUILD_ID, BOT_CHANNEL_ID
+from .config import DATABASE, EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
 from .utils import get_channel
 
 

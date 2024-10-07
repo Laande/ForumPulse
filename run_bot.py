@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 
-from src.config import DATABASE, AUTHORIZED
+from src.config import AUTHORIZED, BOT_GUILD_ID, SERVER_CHANNEL_ID
 from src.utils import load_token, get_channel, extract_id
 from src.update import weekly_forum_update, update_bot_status, process_server
 from src import db
@@ -23,6 +23,20 @@ class MyBot(discord.Client):
         await db.setup()
         weekly_forum_update.start(bot)
         update_bot_status.start(bot)
+        
+    async def on_guild_join(self, guild: discord.Guild):
+        if guild := bot.get_guild(BOT_GUILD_ID):
+            if channel := guild.get_channel(SERVER_CHANNEL_ID):
+                await channel.send(
+                    f"✅ Joined a new server: **{guild.name}** (ID: {guild.id})\n"
+                    f"👥 Members: {guild.member_count}\n"
+                    f"📁 Channels: {len(guild.channels)}"
+                )
+
+    async def on_guild_remove(self, guild: discord.Guild):
+        if guild := bot.get_guild(BOT_GUILD_ID):
+            if channel := guild.get_channel(SERVER_CHANNEL_ID):
+                await channel.send(f"❌ Removed from server: **{guild.name}** (ID: {guild.id})")
 
 
 bot = MyBot()
