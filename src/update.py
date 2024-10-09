@@ -20,7 +20,7 @@ async def weekly_forum_update(bot):
             await process_server(server_id, bot)
     
     if guild := bot.get_guild(BOT_GUILD_ID):
-        if channel := guild.get_channel(BOT_CHANNEL_ID):
+        if channel := guild.get_channel(STATUS_CHANNEL_ID):
             await channel.send(f"Weekly forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 0 else ''}.")
 
 
