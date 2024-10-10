@@ -21,6 +21,8 @@ class MyBot(discord.Client):
         print(f'Connected as {self.user}')
         await self.tree.sync()
         await db.setup()
+        
+        weekly_forum_update.change_interval(days=6)
         weekly_forum_update.start(bot)
         update_bot_status.start(bot)
         

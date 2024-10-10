@@ -10,7 +10,7 @@ from .utils import get_channel
 already_check = set()
 
 
-@tasks.loop(time=time(12, 0, tzinfo=timezone.utc))  # Wednesday 12:00 PM (UTC)
+@tasks.loop(time=time(12, 0, tzinfo=timezone.utc))
 async def weekly_forum_update(bot):
     async with aiosqlite.connect(DATABASE) as db:
         servers = await db.execute("SELECT server_id FROM servers")
