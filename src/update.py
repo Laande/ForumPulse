@@ -1,7 +1,7 @@
 import discord
 import aiosqlite
 import asyncio
-from datetime import time, timezone
+from datetime import time, datetime
 from discord.ext import tasks
 from .config import DATABASE, EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
 from .utils import get_channel
@@ -10,8 +10,12 @@ from .utils import get_channel
 already_check = set()
 
 
-@tasks.loop(time=time(12, 0, tzinfo=timezone.utc))
+@tasks.loop(time=time(12, 0))
 async def weekly_forum_update(bot):
+    now = datetime.now()
+    if now.weekday() != 6:
+        return
+
     async with aiosqlite.connect(DATABASE) as db:
         servers = await db.execute("SELECT server_id FROM servers")
         server_ids = [row[0] for row in await servers.fetchall()]
@@ -146,4 +150,3 @@ async def update_bot_status(bot):
         type=discord.ActivityType.watching, 
         name=f"over {total_posts} posts"
     ))
-    print(f"Bot status updated to watching over {total_posts} posts.")

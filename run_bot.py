@@ -22,7 +22,6 @@ class MyBot(discord.Client):
         await self.tree.sync()
         await db.setup()
         
-        weekly_forum_update.change_interval(days=6)
         weekly_forum_update.start(bot)
         update_bot_status.start(bot)
         
@@ -198,4 +197,4 @@ async def refresh_status(interaction: discord.Interaction):
 
 if __name__ == "__main__":
     token = load_token()
-    bot.run(token)
+    bot.start(token)
