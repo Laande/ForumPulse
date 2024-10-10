@@ -197,4 +197,4 @@ async def refresh_status(interaction: discord.Interaction):
 
 if __name__ == "__main__":
     token = load_token()
-    bot.start(token)
+    bot.run(token, log_handler=None)
