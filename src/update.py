@@ -25,6 +25,8 @@ async def weekly_forum_update(bot):
     
     if guild := bot.get_guild(BOT_GUILD_ID):
         if channel := guild.get_channel(STATUS_CHANNEL_ID):
+            servers = await db.execute("SELECT server_id FROM servers")
+            server_ids = [row[0] for row in await servers.fetchall()]
             await channel.send(f"Weekly forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 0 else ''}.")
 
 
