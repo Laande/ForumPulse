@@ -181,11 +181,18 @@ async def info(interaction: discord.Interaction):
 
 
 @app_commands.check(lambda interaction: interaction.user.guild_permissions.manage_channels)
+@app_commands.Cooldown(1, 7200, key=lambda i: i.guild_id)  # Cooldown of 2 hoors per server
 @bot.tree.command(name="run_update", description="Update tracked channels.")
-async def refresh_status(interaction: discord.Interaction):
-    await interaction.response.defer()
-    await process_server(interaction.guild.id, bot)
-    await interaction.followup.send("Server update completed.")
+async def run_update(interaction: discord.Interaction):
+    try:
+        await interaction.response.defer()
+        await process_server(interaction.guild.id, bot)
+        await interaction.followup.send("Server update completed.")
+    except app_commands.CheckFailure:
+        await interaction.response.send_message("You do not have permission to run this command.", ephemeral=True)
+    except app_commands.CommandOnCooldown as e:
+        minutes_left = round(e.retry_after / 60)
+        await interaction.response.send_message(f"Command is on cooldown. Try again in {minutes_left} minute(s).", ephemeral=True)
 
 
 if __name__ == "__main__":
