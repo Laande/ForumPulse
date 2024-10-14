@@ -110,8 +110,11 @@ async def update_post(thread_id: int, bot: discord.Client):
         return
 
     thread = await bot.fetch_channel(thread_id)
-    message = await thread.fetch_message(thread_id)
+    if thread.archived:
+        await thread.edit(archived=False)
     
+    message = await thread.fetch_message(thread_id)
+        
     await message.add_reaction(EMOJI)
     await asyncio.sleep(2)
     await message.remove_reaction(EMOJI, bot.user)
