@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 
-from src.config import AUTHORIZED, BOT_GUILD_ID, SERVER_CHANNEL_ID
+from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID
 from src.utils import load_token, get_channel, extract_id
 from src.update import weekly_forum_update, update_bot_status, process_server
 from src import db
@@ -173,22 +173,15 @@ async def info(interaction: discord.Interaction):
         "- </add_forum:1290055778031632507>: Add a specific forum.\n"
         "- </add_post:1290055778031632508>: Add a specific post.\n"
         "- </list_channels:1290086788114944062>: List all channels in the db.\n"
-        "- </remove_channel:1290086788114944063>: Remove a channel from the db.\n\n"
+        "- </remove_channel:1290086788114944063>: Remove a channel from the db.\n"
+        "- </run_update:1292600854297444362>: Update tracked chanels.\n"
         "The bot runs weekly to add a reaction to all monitored posts and then remove it."
     )
     await interaction.response.send_message(info_message)
 
 
-@app_commands.check(lambda interaction: interaction.user.id in AUTHORIZED)
-@bot.tree.command(name="refresh_status", description="Refresh the status of the bot.")
-async def refresh_status(interaction: discord.Interaction):
-    await interaction.response.defer()
-    await update_bot_status(bot)
-    await interaction.followup.send("Bot status updated.")
-
-
-@app_commands.check(lambda interaction: interaction.user.id in AUTHORIZED)
-@bot.tree.command(name="run_update", description="Run the update script.")
+@app_commands.check(lambda interaction: interaction.user.guild_permissions.manage_channels)
+@bot.tree.command(name="run_update", description="Update tracked channels.")
 async def refresh_status(interaction: discord.Interaction):
     await interaction.response.defer()
     await process_server(interaction.guild.id, bot)
