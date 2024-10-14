@@ -111,12 +111,12 @@ async def update_post(thread_id: int, bot: discord.Client):
 
     thread = await bot.fetch_channel(thread_id)
     message = await thread.fetch_message(thread_id)
+    already_check.add(thread_id)
     if message.archived:
         await message.edit(archived=False)
-        
-    await message.add_reaction(EMOJI)
-    await message.remove_reaction(EMOJI, bot.user)
-    already_check.add(thread_id)
+    else:
+        await message.add_reaction(EMOJI)
+        await message.remove_reaction(EMOJI, bot.user)
 
 
 async def get_monitored_posts(bot):
