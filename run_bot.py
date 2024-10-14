@@ -179,7 +179,7 @@ async def info(interaction: discord.Interaction):
 
 
 @app_commands.checks.has_permissions(manage_channels=True)
-@app_commands.Cooldown(1, 7200, key=lambda i: i.guild_id)  # Cooldown of 2 hoors per server
+@app_commands.checks.cooldown(1, 7200, key=lambda i: i.guild_id)  # Cooldown of 2 hoors per server
 @bot.tree.command(name="run_update", description="Update tracked channels.")
 async def run_update(interaction: discord.Interaction):
     await interaction.response.defer()
