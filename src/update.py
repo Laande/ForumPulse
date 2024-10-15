@@ -102,7 +102,7 @@ async def update_forum(forum: discord.ForumChannel, bot):
     for thread in forum.threads:
         await update_post(thread.id, bot)
     
-    for thread in forum.archived_threads(limit=None):
+    async for thread in forum.archived_threads(limit=None):
         await update_post(thread.id, bot)
 
 
