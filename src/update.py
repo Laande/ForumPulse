@@ -69,10 +69,8 @@ async def process_server(server_id, bot):
     global already_check
     already_check = set()
     
-    
     async with aiosqlite.connect(DATABASE) as db:
         await check_stil_exist(db, server_id, bot)
-        
         async with db.execute("SELECT item_id FROM categories WHERE server_id = ? AND category_type = 'post'", (server_id,)) as cursor:
             posts = await cursor.fetchall()
             for post in posts:
@@ -90,6 +88,8 @@ async def process_server(server_id, bot):
             for category in categories:
                 category_id = category[0]
                 await update_category(bot.get_channel(category_id), bot)
+    
+    return len(already_check)
 
 
 async def update_category(category: discord.CategoryChannel, bot):

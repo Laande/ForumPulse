@@ -183,8 +183,8 @@ async def info(interaction: discord.Interaction):
 @bot.tree.command(name="run_update", description="Update tracked channels.")
 async def run_update(interaction: discord.Interaction):
     await interaction.response.defer()
-    await process_server(interaction.guild.id, bot)
-    await interaction.followup.send("Server update completed.")
+    channels_number = await process_server(interaction.guild.id, bot)
+    await interaction.followup.send(f"Server update completed with {channels_number} channels.")
 
 
 @bot.tree.error
