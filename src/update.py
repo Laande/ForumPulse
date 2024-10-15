@@ -101,6 +101,9 @@ async def update_category(category: discord.CategoryChannel, bot):
 async def update_forum(forum: discord.ForumChannel, bot):
     for thread in forum.threads:
         await update_post(thread.id, bot)
+    
+    for thread in forum.archived_threads(limit=None):
+        await update_post(thread.id, bot)
 
 
 async def update_post(thread_id: int, bot: discord.Client):
@@ -109,12 +112,12 @@ async def update_post(thread_id: int, bot: discord.Client):
     if thread_id in already_check:
         return
 
-    thread = await bot.fetch_channel(thread_id)
-    message = await thread.fetch_message(thread_id)
     already_check.add(thread_id)
-    if message.archived:
-        await message.edit(archived=False)
+    thread = await bot.fetch_channel(thread_id)
+    if thread.archived:
+        await thread.edit(archived=False)
     else:
+        message = await thread.fetch_message(thread_id)
         await message.add_reaction(EMOJI)
         await message.remove_reaction(EMOJI, bot.user)
 
