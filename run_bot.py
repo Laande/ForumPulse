@@ -1,10 +1,11 @@
+import time
 import discord
 from discord import app_commands
 
-from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID
-from src.utils import load_token, get_channel, extract_id
-from src.update import weekly_forum_update, update_bot_status, process_server
 from src import db
+from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID
+from src.utils import load_token, get_channel, extract_id, time_format
+from src.update import weekly_forum_update, update_bot_status, process_server
 
 
 class MyBot(discord.Client):
@@ -183,8 +184,10 @@ async def info(interaction: discord.Interaction):
 @bot.tree.command(name="run_update", description="Update tracked channels.")
 async def run_update(interaction: discord.Interaction):
     await interaction.response.defer()
+    t_start = time.perf_counter()
     channels_number = await process_server(interaction.guild.id, bot)
-    await interaction.followup.send(f"Server update completed with {channels_number} channels.")
+    t_total = time.perf_counter() - t_start
+    await interaction.followup.send(f"{channels_number} channels up in {time_format(t_total)}.")
 
 
 @bot.tree.error

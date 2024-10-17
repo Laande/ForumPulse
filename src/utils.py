@@ -43,3 +43,13 @@ async def get_channel(channel_input: str, bot: discord.Client) -> discord.abc.Gu
         return None
     else:
         return await bot.fetch_channel(channel_input)
+
+def time_format(total_time) -> str:
+    if total_time < 60:
+        return f"{total_time:.0f}s"
+    elif total_time < 3600:
+        total_time = total_time / 60
+        return f"{total_time:.2f}m"
+    else:
+        total_time = total_time / 3600
+        return f"{total_time:.2f}h"
