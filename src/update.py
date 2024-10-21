@@ -1,7 +1,7 @@
 import discord
 
-from .config import EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
-from .db import (
+from src.config import EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
+from src.db import (
     remove_server,
     remove_channel,
     get_servers,

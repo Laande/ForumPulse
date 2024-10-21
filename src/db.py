@@ -1,5 +1,5 @@
 import aiosqlite
-from .config import DATABASE
+from src.config import DATABASE
 
 
 async def setup():

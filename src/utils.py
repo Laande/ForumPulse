@@ -1,7 +1,7 @@
 import os
 import re
 import discord
-from .config import TOKEN_FILE
+from src.config import TOKEN_FILE
 
 def load_token() -> str:
     if not os.path.exists(TOKEN_FILE):
