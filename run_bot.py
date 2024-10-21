@@ -167,7 +167,7 @@ async def remove_channel(interaction: discord.Interaction, channel: str):
 async def info(interaction: discord.Interaction):
     info_message = (
         "This bot is designed to keep forums active.\n\n"
-        "**Commands:**\n"
+        "**Commands:** *(They all need manage channels permission)*\n"
         "- </add_category:1290055778031632506>: Add all forums in the category.\n"
         "- </add_forum:1290055778031632507>: Add a specific forum.\n"
         "- </add_post:1290055778031632508>: Add a specific post.\n"
