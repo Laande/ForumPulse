@@ -1,11 +1,14 @@
 import time
 import discord
 from discord import app_commands
+from discord.ext import tasks
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 from src import db
 from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID
 from src.utils import load_token, get_channel, extract_id, time_format
-from src.update import weekly_forum_update, update_bot_status, process_server
+from src.update import weekly_forum_update, process_server, get_monitored_posts
 
 
 class MyBot(discord.Client):
@@ -17,15 +20,20 @@ class MyBot(discord.Client):
     def __init__(self):
         super().__init__(intents=self.intents)
         self.tree = app_commands.CommandTree(self)
+        self.scheduler = AsyncIOScheduler()
 
     async def on_ready(self):
         print(f'Connected as {self.user}')
         await self.tree.sync()
         await db.setup()
         
-        weekly_forum_update.start(bot)
-        update_bot_status.start(bot)
-        
+        self.start_scheduler()
+        self.update_bot_status.start(self)
+    
+    def start_scheduler(self):
+        self.scheduler.add_job(weekly_forum_update, CronTrigger(day_of_week='sun', hour=12, minute=0), args=[self])
+        self.scheduler.start()
+    
     async def on_guild_join(self, guild: discord.Guild):
         if guild_log := bot.get_guild(BOT_GUILD_ID):
             if channel_log := guild_log.get_channel(SERVER_CHANNEL_ID):
@@ -39,6 +47,12 @@ class MyBot(discord.Client):
         if guild_log := bot.get_guild(BOT_GUILD_ID):
             if channel_log := guild_log.get_channel(SERVER_CHANNEL_ID):
                 await channel_log.send(f"❌ Removed from server: **{guild.name}** (ID: {guild.id})")
+    
+    @tasks.loop(hours=1)
+    async def update_bot_status(bot):
+        await bot.wait_until_ready()
+        post_set = await get_monitored_posts(bot)
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"over {len(post_set)} posts"))
 
 
 bot = MyBot()
@@ -168,9 +182,9 @@ async def info(interaction: discord.Interaction):
     info_message = (
         "This bot is designed to keep forums active.\n\n"
         "**Commands:** *(They all need manage channels permission)*\n"
-        "- </add_category:1290055778031632506>: Add all forums in the category.\n"
-        "- </add_forum:1290055778031632507>: Add a specific forum.\n"
-        "- </add_post:1290055778031632508>: Add a specific post.\n"
+        "- </add_category:1290079934060040272>: Add all forums in the category.\n"
+        "- </add_forum:1290079934060040273>: Add a specific forum.\n"
+        "- </add_post:1290079934060040274>: Add a specific post.\n"
         "- </list_channels:1290086788114944062>: List all channels in the db.\n"
         "- </remove_channel:1290086788114944063>: Remove a channel from the db.\n"
         "- </run_update:1292600854297444362>: Update tracked chanels.\n"
@@ -192,11 +206,11 @@ async def run_update(interaction: discord.Interaction):
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-    if isinstance(error, app_commands.CheckFailure):
-        await interaction.response.send_message("You do not have permission to run this command.", ephemeral=True)
-    elif isinstance(error, app_commands.CommandOnCooldown):
+    if isinstance(error, app_commands.CommandOnCooldown):
         minutes_left = round(error.retry_after / 60)
-        await interaction.response.send_message(f"Command is on cooldown. Try again in {minutes_left} minute(s).", ephemeral=True)
+        await interaction.response.send_message(f"Command is on cooldown. Try again in {minutes_left} minute{'s' if minutes_left > 1 else ''}.", ephemeral=True)
+    elif isinstance(error, app_commands.CheckFailure):
+        await interaction.response.send_message("You do not have permission to run this command.", ephemeral=True)
     else:
         await interaction.response.send_message("An error occurred while executing the command.", ephemeral=True)
 
