@@ -26,6 +26,7 @@ class MyBot(discord.Client):
         print(f'Connected as {self.user}')
         await self.tree.sync()
         await db.setup()
+        await self.update_bot_status(self)
         
         self.start_scheduler()
         self.update_bot_status.start(self)
@@ -180,15 +181,15 @@ async def remove_channel(interaction: discord.Interaction, channel: str):
 @bot.tree.command(name="info", description="Get information about the bot and its functionalities.")
 async def info(interaction: discord.Interaction):
     info_message = (
-        "This bot is designed to keep forums active.\n\n"
+        "This bot is designed to keep forums active.\n"
+        "The bot runs weekly to unarchive or add a reaction to all monitored posts and then remove it.\n\n"
         "**Commands:** *(They all need manage channels permission)*\n"
         "- </add_category:1290079934060040272>: Add all forums in the category.\n"
         "- </add_forum:1290079934060040273>: Add a specific forum.\n"
         "- </add_post:1290079934060040274>: Add a specific post.\n"
         "- </list_channels:1290086788114944062>: List all channels in the db.\n"
         "- </remove_channel:1290086788114944063>: Remove a channel from the db.\n"
-        "- </run_update:1292600854297444362>: Update tracked chanels.\n"
-        "The bot runs weekly to add a reaction to all monitored posts and then remove it."
+        "- </run_update:1292600854297444362>: Update tracked chanels."
     )
     await interaction.response.send_message(info_message)
 
