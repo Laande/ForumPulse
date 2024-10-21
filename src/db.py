@@ -35,10 +35,10 @@ async def get_channels(server_id):
     }
 
     async with aiosqlite.connect(DATABASE) as db:
-        cursor = await db.execute("SELECT category_type, item_id FROM categories WHERE server_id = ?", (server_id,))
-        async for row in cursor:
-            category_type, item_id = row
-            channels_by_category[category_type].append(item_id)
+        async with db.execute("SELECT category_type, item_id FROM categories WHERE server_id = ?", (server_id,)) as cursor:
+            async for row in cursor:
+                category_type, item_id = row
+                channels_by_category[category_type].append(item_id)
 
     return channels_by_category
 
@@ -88,4 +88,5 @@ async def get_categories_for_server(server_id):
 
 async def list_all_channels():
     async with aiosqlite.connect(DATABASE) as db:
-        return await db.execute("SELECT item_id, category_type FROM categories")
+        async with db.execute("SELECT item_id, category_type FROM categories") as cursor:
+            return await cursor.fetchall()

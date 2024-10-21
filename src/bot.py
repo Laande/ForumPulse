@@ -26,10 +26,9 @@ class MyBot(discord.Client):
         print(f'Connected as {self.user}')
         await self.tree.sync()
         await db.setup()
-        await self.update_bot_status(self)
         
         self.start_scheduler()
-        self.update_bot_status.start(self)
+        self.update_bot_status.start()
     
     def start_scheduler(self):
         self.scheduler.add_job(weekly_forum_update, CronTrigger(day_of_week='sun', hour=12, minute=0), args=[self])
@@ -50,10 +49,10 @@ class MyBot(discord.Client):
                 await channel_log.send(f"❌ Removed from server: **{guild.name}** (ID: {guild.id})")
     
     @tasks.loop(hours=1)
-    async def update_bot_status(bot):
-        await bot.wait_until_ready()
-        post_set = await get_monitored_posts(bot)
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"over {len(post_set)} posts"))
+    async def update_bot_status(self):
+        await self.wait_until_ready()
+        post_set = await get_monitored_posts(self)
+        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"over {len(post_set)} posts"))
 
 
 bot = MyBot()
@@ -218,4 +217,4 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
 
 def run():
     token = load_token()
-    bot.run(token, log_handler=None)
+    bot.run(token)

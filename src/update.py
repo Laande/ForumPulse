@@ -1,6 +1,7 @@
 import discord
 
 from src import db
+from src.utils import get_channel
 from src.config import EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
 
 already_check = set()
@@ -88,9 +89,9 @@ async def update_post(thread_id: int, bot: discord.Client):
 
 async def get_monitored_posts(bot):
     post_set = set()
-    async for channels in db.list_all_channels():
-        item_id, category_type = channels
-        channel = await db.get_channels(item_id, bot)
+    channels = await db.list_all_channels()
+    for item_id, category_type in channels:
+        channel = await get_channel(item_id, bot)
 
         if category_type == 'forum':
             for thread in channel.threads:
