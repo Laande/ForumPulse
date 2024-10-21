@@ -1,21 +1,12 @@
 import discord
 
+from src import db
 from src.config import EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
-from src.db import (
-    remove_server,
-    remove_channel,
-    get_servers,
-    get_posts_for_server,
-    get_forums_for_server,
-    get_categories_for_server,
-    get_channels,
-    list_all_channels
-)
 
 already_check = set()
 
 async def weekly_forum_update(bot):
-    server_ids = await get_servers()
+    server_ids = await db.get_servers()
     for server_id in server_ids:
         await process_server(server_id, bot)
     
@@ -30,19 +21,19 @@ async def weekly_forum_update(bot):
 
 
 async def check_stil_exist(server_id, bot):
-    server_ids = await get_servers()
+    server_ids = await db.get_servers()
     for server_id in server_ids:
         guild = bot.get_guild(server_id)
         if not guild:
-            await remove_server(server_id)
+            await db.remove_server(server_id)
             continue
 
-        channels = await get_channels(server_id)
+        channels = await db.get_channels(server_id)
         for channel_id in channels['category'] + channels['forum'] + channels['post']:
             channel = guild.get_channel(channel_id)
 
             if not channel:
-                await remove_channel(server_id, channel_id)
+                await db.remove_channel(server_id, channel_id)
 
 
 async def process_server(server_id, bot):
@@ -51,15 +42,15 @@ async def process_server(server_id, bot):
     
     await check_stil_exist(server_id, bot)
     
-    posts = await get_posts_for_server(server_id)
+    posts = await db.get_posts_for_server(server_id)
     for post_id in posts:
         await update_post(post_id, bot)
 
-    forums = await get_forums_for_server(server_id)
+    forums = await db.get_forums_for_server(server_id)
     for forum_id in forums:
         await update_forum(bot.get_channel(forum_id), bot)
 
-    categories = await get_categories_for_server(server_id)
+    categories = await db.get_categories_for_server(server_id)
     for category_id in categories:
         await update_category(bot.get_channel(category_id), bot)
     
@@ -97,9 +88,9 @@ async def update_post(thread_id: int, bot: discord.Client):
 
 async def get_monitored_posts(bot):
     post_set = set()
-    async for channels in list_all_channels():
+    async for channels in db.list_all_channels():
         item_id, category_type = channels
-        channel = await get_channels(item_id, bot)
+        channel = await db.get_channels(item_id, bot)
 
         if category_type == 'forum':
             for thread in channel.threads:
