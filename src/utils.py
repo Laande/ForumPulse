@@ -42,7 +42,7 @@ async def get_channel(channel_input: str, bot: discord.Client) -> discord.abc.Gu
     if channel_input is None:
         return None
     else:
-        return await bot.get_channel(channel_input)
+        return bot.get_channel(channel_input)
 
 def time_format(total_time) -> str:
     if total_time < 60:
