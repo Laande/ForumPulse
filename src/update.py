@@ -92,6 +92,10 @@ async def get_monitored_posts(bot):
     channels = await db.list_all_channels()
     for item_id, category_type in channels:
         channel = await get_channel(item_id, bot)
+        
+        if not channel:
+            print(f"Channel {item_id} not found.")
+            continue
 
         if category_type == 'forum':
             for thread in channel.threads:
