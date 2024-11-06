@@ -6,12 +6,12 @@ from src.config import EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
 
 already_check = set()
 
-async def weekly_forum_update(bot):
+async def forum_update(bot):
     server_ids = await db.get_servers()
     for server_id in server_ids:
         await process_server(server_id, bot)
     
-    res_msg = f"Weekly forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 1 else ''}."
+    res_msg = f"Forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 1 else ''}."
     
     guild = bot.get_guild(BOT_GUILD_ID)
     channel = guild.get_channel(STATUS_CHANNEL_ID) if guild else None

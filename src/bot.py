@@ -8,7 +8,7 @@ from apscheduler.triggers.cron import CronTrigger
 from src import db
 from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID
 from src.utils import load_token, get_channel, extract_id, time_format
-from src.update import weekly_forum_update, process_server, get_monitored_posts
+from src.update import forum_update, process_server, get_monitored_posts
 
 
 class MyBot(discord.Client):
@@ -31,7 +31,8 @@ class MyBot(discord.Client):
         self.update_bot_status.start()
     
     def start_scheduler(self):
-        self.scheduler.add_job(weekly_forum_update, CronTrigger(day_of_week='sun', hour=12, minute=0), args=[self])
+        self.scheduler.add_job(forum_update, CronTrigger(day_of_week='sun', hour=12, minute=0), args=[self])
+        self.scheduler.add_job(forum_update, CronTrigger(day_of_week='wed', hour=12, minute=0), args=[self])
         self.scheduler.start()
     
     async def on_guild_join(self, guild: discord.Guild):
@@ -181,14 +182,15 @@ async def remove_channel(interaction: discord.Interaction, channel: str):
 async def info(interaction: discord.Interaction):
     info_message = (
         "This bot is designed to keep forums active.\n"
-        "The bot runs weekly to unarchive or add a reaction to all monitored posts and then remove it.\n\n"
+        "The bot runs 2 times per week to unarchive or add a reaction to all monitored posts and then remove it.\n\n"
         "**Commands:** *(They all need manage channels permission)*\n"
         "- </add_category:1290079934060040272>: Add all forums in the category.\n"
         "- </add_forum:1290079934060040273>: Add a specific forum.\n"
         "- </add_post:1290079934060040274>: Add a specific post.\n"
         "- </list_channels:1290086788114944062>: List all channels in the db.\n"
         "- </remove_channel:1290086788114944063>: Remove a channel from the db.\n"
-        "- </run_update:1292600854297444362>: Update tracked chanels."
+        "- </run_update:1292600854297444362>: Update tracked chanels\n\n."
+        "Support server: https://discord.gg/3b3qvn2aTc"
     )
     await interaction.response.send_message(info_message)
 
