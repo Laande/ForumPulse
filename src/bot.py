@@ -187,10 +187,10 @@ async def info(interaction: discord.Interaction):
         "- </add_category:1290079934060040272>: Add all forums in the category.\n"
         "- </add_forum:1290079934060040273>: Add a specific forum.\n"
         "- </add_post:1290079934060040274>: Add a specific post.\n"
-        "- </list_channels:1290086788114944062>: List all channels in the db.\n"
-        "- </remove_channel:1290086788114944063>: Remove a channel from the db.\n"
-        "- </run_update:1292600854297444362>: Update tracked chanels\n\n."
-        "Support server: https://discord.gg/3b3qvn2aTc"
+        "- </list_channels:1290086788114944062>: List all channels.\n"
+        "- </remove_channel:1290086788114944063>: Remove a channel.\n"
+        "- </run_update:1292600854297444362>: Update tracked chanels.\n\n"
+        "[Support server](<https://discord.gg/3b3qvn2aTc>)"
     )
     await interaction.response.send_message(info_message)
 
