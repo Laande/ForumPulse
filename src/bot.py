@@ -217,11 +217,15 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
         await interaction.response.send_message("An error occurred while executing the command.", ephemeral=True)
 
 
-def run():
+def update_on_ready():
+    @bot.event
+    async def on_ready():
+        await forum_update(bot)
+
+
+def run(start_init = False):
+    if start_init:
+        update_on_ready()
+    
     token = load_token()
     bot.run(token)
-
-
-def update_all():
-    run()
-    forum_update(bot)
