@@ -68,8 +68,11 @@ async def update_forum(forum: discord.ForumChannel, bot):
     for thread in forum.threads:
         await update_post(thread.id, bot)
     
-    async for thread in forum.archived_threads(limit=None):
-        await update_post(thread.id, bot)
+    try: 
+        async for thread in forum.archived_threads(limit=None):
+            await update_post(thread.id, bot)
+    except discord.errors.Forbidden:
+        pass
 
 
 async def update_post(thread_id: int, bot: discord.Client):
