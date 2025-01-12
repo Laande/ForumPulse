@@ -220,3 +220,8 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
 def run():
     token = load_token()
     bot.run(token)
+
+
+def update_all():
+    run()
+    forum_update(bot)
