@@ -88,9 +88,12 @@ async def update_post(thread_id: int, bot: discord.Client):
         except discord.errors.Forbidden:
             pass
     else:
-        message = await thread.fetch_message(thread_id)
-        await message.add_reaction(EMOJI)
-        await message.remove_reaction(EMOJI, bot.user)
+        try:
+            message = await thread.fetch_message(thread_id)
+            await message.add_reaction(EMOJI)
+            await message.remove_reaction(EMOJI, bot.user)
+        except discord.errors.NotFound:
+            pass
 
 
 async def get_monitored_posts(bot):
