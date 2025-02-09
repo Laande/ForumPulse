@@ -31,8 +31,7 @@ class MyBot(discord.Client):
         self.update_bot_status.start()
     
     def start_scheduler(self):
-        self.scheduler.add_job(forum_update, CronTrigger(day_of_week='sun', hour=12, minute=0), args=[self])
-        self.scheduler.add_job(forum_update, CronTrigger(day_of_week='wed', hour=12, minute=0), args=[self])
+        self.scheduler.add_job(forum_update, CronTrigger(hour=12, minute=0, second=0), args=[self])
         self.scheduler.start()
     
     async def on_guild_join(self, guild: discord.Guild):
@@ -182,7 +181,7 @@ async def remove_channel(interaction: discord.Interaction, channel: str):
 async def info(interaction: discord.Interaction):
     info_message = (
         "This bot is designed to keep forums active.\n"
-        "The bot runs 2 times per week to unarchive or add a reaction to all monitored posts and then remove it.\n\n"
+        "The bot runs every day to unarchive or add a reaction to all monitored posts and then remove it.\n\n"
         "**Commands:** *(They all need manage channels permission)*\n"
         "- </add_category:1290079934060040272>: Add all forums in the category.\n"
         "- </add_forum:1290079934060040273>: Add a specific forum.\n"
