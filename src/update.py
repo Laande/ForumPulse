@@ -1,17 +1,20 @@
 import discord
+import asyncio
+import time
 
 from src import db
 from src.utils import get_channel
 from src.config import EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
 
-already_check = set()
 
 async def forum_update(bot):
+    time_start = time.perf_counter()
     server_ids = await db.get_servers()
-    for server_id in server_ids:
-        await process_server(server_id, bot)
+    tasks = [process_server(server_id, bot) for server_id in server_ids]
+    results = await asyncio.gather(*tasks)
+    total_time_minutes = time.perf_counter() - time_start / 60
     
-    res_msg = f"Forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 1 else ''}."
+    res_msg = f"Forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 1 else ''} in {total_time_minutes:.2f} minutes."
     
     guild = bot.get_guild(BOT_GUILD_ID)
     channel = guild.get_channel(STATUS_CHANNEL_ID) if guild else None
@@ -38,45 +41,47 @@ async def check_stil_exist(server_id, bot):
 
 
 async def process_server(server_id, bot):
-    global already_check
     already_check = set()
     
     await check_stil_exist(server_id, bot)
     
     posts = await db.get_posts_for_server(server_id)
     for post_id in posts:
-        await update_post(post_id, bot)
+        await update_post(post_id, bot, already_check)
 
     forums = await db.get_forums_for_server(server_id)
     for forum_id in forums:
-        await update_forum(bot.get_channel(forum_id), bot)
+        channel = bot.get_channel(forum_id)
+        if channel:
+            await update_forum(channel, bot, already_check)
 
     categories = await db.get_categories_for_server(server_id)
     for category_id in categories:
-        await update_category(bot.get_channel(category_id), bot)
+        channel = bot.get_channel(category_id)
+        if channel:
+            await update_category(channel, bot, already_check)
     
     return len(already_check)
 
 
-async def update_category(category: discord.CategoryChannel, bot):
+async def update_category(category: discord.CategoryChannel, bot, already_check: set):
     for channel in category.channels:
         if isinstance(channel, discord.ForumChannel):
-            await update_forum(channel, bot)
+            await update_forum(channel, bot, already_check)
 
 
-async def update_forum(forum: discord.ForumChannel, bot):
+async def update_forum(forum: discord.ForumChannel, bot, already_check: set):
     for thread in forum.threads:
-        await update_post(thread.id, bot)
+        await update_post(thread.id, bot, already_check)
     
     try: 
         async for thread in forum.archived_threads(limit=None):
-            await update_post(thread.id, bot)
+            await update_post(thread.id, bot, already_check)
     except discord.errors.Forbidden:
         pass
 
 
-async def update_post(thread_id: int, bot: discord.Client):
-    global already_check
+async def update_post(thread_id: int, bot: discord.Client, already_check: set):
     if thread_id in already_check:
         return
 
