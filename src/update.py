@@ -3,7 +3,7 @@ import asyncio
 import time
 
 from src import db
-from src.utils import get_channel
+from src.utils import get_channel, time_format
 from src.config import EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
 
 
@@ -12,9 +12,8 @@ async def forum_update(bot):
     server_ids = await db.get_servers()
     tasks = [process_server(server_id, bot) for server_id in server_ids]
     results = await asyncio.gather(*tasks)
-    total_time_minutes = time.perf_counter() - time_start / 60
-    
-    res_msg = f"Forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 1 else ''} in {total_time_minutes:.2f} minutes."
+    total_time = time.perf_counter() - time_start
+    res_msg = f"Forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 1 else ''} in {time_format(total_time)}."
     
     guild = bot.get_guild(BOT_GUILD_ID)
     channel = guild.get_channel(STATUS_CHANNEL_ID) if guild else None
@@ -73,7 +72,7 @@ async def update_category(category: discord.CategoryChannel, bot, already_check:
 async def update_forum(forum: discord.ForumChannel, bot, already_check: set):
     for thread in forum.threads:
         await update_post(thread.id, bot, already_check)
-    
+
     try: 
         async for thread in forum.archived_threads(limit=None):
             await update_post(thread.id, bot, already_check)
