@@ -5,10 +5,8 @@ from discord.ext import tasks
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from src import db
-from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID
-from src.utils import load_token, get_channel, extract_id, time_format
-from src.update import forum_update, process_server, get_monitored_posts
+from src import db, utils, update
+from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID, USER_ID
 
 
 class MyBot(discord.Client):
@@ -31,7 +29,7 @@ class MyBot(discord.Client):
         self.update_bot_status.start()
     
     def start_scheduler(self):
-        self.scheduler.add_job(forum_update, CronTrigger(hour=12, minute=0, second=0), args=[self])
+        self.scheduler.add_job(update.forum_update, CronTrigger(hour=12, minute=0, second=0), args=[self])
         self.scheduler.start()
     
     async def on_guild_join(self, guild: discord.Guild):
@@ -51,7 +49,7 @@ class MyBot(discord.Client):
     @tasks.loop(hours=1)
     async def update_bot_status(self):
         await self.wait_until_ready()
-        post_set = await get_monitored_posts(self)
+        post_set = await update.get_monitored_posts(self)
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"over {len(post_set)} posts"))
 
 
@@ -71,7 +69,7 @@ async def add_to_db(server_id, channel_type, channel_id):
 @app_commands.guild_only()
 @app_commands.checks.has_permissions(manage_channels=True)
 async def add_category(interaction: discord.Interaction, category: str):
-    category_channel = await get_channel(category, bot)
+    category_channel = await utils.get_channel(category, bot)
 
     if isinstance(category_channel, discord.CategoryChannel):
         msg = await add_to_db(interaction.guild.id, 'category', category_channel.id)
@@ -95,7 +93,7 @@ async def autocomplete_categories(interaction: discord.Interaction, current: str
 @app_commands.guild_only()
 @app_commands.checks.has_permissions(manage_channels=True)
 async def add_forum(interaction: discord.Interaction, forum: str):
-    forum_channel = await get_channel(forum, bot)
+    forum_channel = await utils.get_channel(forum, bot)
 
     if isinstance(forum_channel, discord.ForumChannel):
         msg = await add_to_db(interaction.guild.id, 'forum', forum_channel.id)
@@ -119,7 +117,7 @@ async def autocomplete_forum(interaction: discord.Interaction, current: str):
 @app_commands.guild_only()
 @app_commands.checks.has_permissions(manage_channels=True)
 async def add_post(interaction: discord.Interaction, post: str):
-    post_channel = await get_channel(post, bot)
+    post_channel = await utils.get_channel(post, bot)
 
     if isinstance(post_channel, discord.threads.Thread):
         msg = await add_to_db(interaction.guild.id, 'post', post_channel.id)
@@ -169,7 +167,7 @@ async def list_channels(interaction: discord.Interaction):
 @app_commands.guild_only()
 @app_commands.checks.has_permissions(manage_channels=True)
 async def remove_channel(interaction: discord.Interaction, channel: str):
-    channel = extract_id(channel)
+    channel = utils.extract_id(channel)
     if not await db.channel_exists(interaction.guild.id, channel):
         await interaction.response.send_message(f"Channel <#{channel}> (`{channel}`) not found in the database.")
     else:
@@ -200,9 +198,9 @@ async def info(interaction: discord.Interaction):
 async def run_update(interaction: discord.Interaction):
     await interaction.response.defer()
     t_start = time.perf_counter()
-    channels_number = await process_server(interaction.guild.id, bot)
+    channels_number = await update.process_server(interaction.guild.id, bot)
     t_total = time.perf_counter() - t_start
-    await interaction.followup.send(f"{channels_number} channels up in {time_format(t_total)}.")
+    await interaction.followup.send(f"{channels_number} channels up in {utils.time_format(t_total)}.")
 
 
 @bot.tree.error
@@ -216,15 +214,39 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
         await interaction.response.send_message("An error occurred while executing the command.", ephemeral=True)
 
 
+@app_commands.check(lambda interaction: interaction.user.id == USER_ID)
+@bot.tree.command(name="stats", description="Get statistics about the bot.")
+async def server_stats(interaction: discord.Interaction):
+    embed = discord.Embed(title="📊 Server Statistics", color=discord.Color.blue())
+    total_guild = len(bot.guilds)
+    embed.add_field(name=utils.pluralize("Total Server", total_guild), value=total_guild, inline=False)
+
+    for guild in bot.guilds:
+        registered_forums = set(await db.get_forums_for_server(guild.id))
+        registered_threads = set(await db.get_posts_for_server(guild.id))
+        
+        total_threads = len(registered_threads)
+        for forum_id in registered_forums:
+            forum = guild.get_channel(forum_id)
+            if forum and isinstance(forum, discord.ForumChannel):
+                total_threads += sum(1 for thread in forum.threads)
+
+        guild_name_with_totals = f"🏠 {guild.name} ({guild.id}) - {total_threads} {utils.pluralize('thread', total_threads)}"
+        guild_info = utils.format_guild_stats(guild, registered_forums, registered_threads)
+        embed.add_field(name=guild_name_with_totals, value=guild_info, inline=False)
+
+    await interaction.response.send_message(embed=embed)
+
+
 def update_on_ready():
     @bot.event
     async def on_ready():
-        await forum_update(bot)
+        await update.forum_update(bot)
 
 
 def run(start_init = False):
     if start_init:
         update_on_ready()
     
-    token = load_token()
+    token = utils.load_token()
     bot.run(token)
