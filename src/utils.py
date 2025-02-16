@@ -62,40 +62,27 @@ def pluralize(word: str, count: int) -> str:
     return f"{word}{'s' if count > 1 else ''}"
 
 
-def format_guild_stats(guild: discord.Guild, registered_forums: set, registered_threads: set) -> str:
-    guild_info = ""
+class PaginatorView(discord.ui.View):
+    def __init__(self, embeds: list[discord.Embed], timeout: int = 180):
+        super().__init__(timeout=timeout)
+        self.embeds = embeds
+        self.current_page = 0
+        self.update_buttons()
 
-    # Process forums in categories
-    for category in guild.categories:
-        forum_count = sum(1 for channel in category.channels if isinstance(channel, discord.ForumChannel) and channel.id in registered_forums)
-        if forum_count:
-            guild_info += f"📁 **{category.name}** - {forum_count} {pluralize('forum', forum_count)}\n"
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary, disabled=True)
+    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_page -= 1
+        await self.update_embed(interaction)
 
-        # Process threads in forums
-        for channel in category.channels:
-            if isinstance(channel, discord.ForumChannel) and channel.id in registered_forums:
-                threads_count = sum(1 for thread in channel.threads)
-                if threads_count:
-                    guild_info += f"↪ 💬 **{channel.name}** - {threads_count} {pluralize('thread', threads_count)}\n"
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_page += 1
+        await self.update_embed(interaction)
 
-    # Process uncategorized forums
-    uncategorized_forums = [channel for channel in guild.channels if isinstance(channel, discord.ForumChannel) and channel.category is None and channel.id in registered_forums]
-    if uncategorized_forums:
-        guild_info += "🗂 **Uncategorized Forums**\n"
-        for forum in uncategorized_forums:
-            threads_count_db = [thread for thread in forum.threads if thread.id in registered_threads]
-            threads_count_channel = [thread for thread in forum.threads if thread.id not in threads_count_db]
-            threads_count = len(threads_count_db) + len(threads_count_channel)
-            guild_info += f"↪ 💬 **{forum.name}** - {threads_count} {pluralize('thread', threads_count)}\n"
-        
-        # Process threads not in a forum
-        threads_count_outside_channel = 0
-        for thread_id in registered_threads:
-            thread = guild.get_thread(thread_id)
-            if thread and thread.parent_id not in registered_forums:
-                threads_count_outside_channel += 1
+    def update_buttons(self):
+        self.previous_button.disabled = self.current_page == 0
+        self.next_button.disabled = self.current_page == len(self.embeds) - 1
 
-        if threads_count_outside_channel:
-            guild_info += f"↪ 💬 **{threads_count_outside_channel}** {pluralize('thread', threads_count_outside_channel)} not in a tracked forum\n"
-
-    return guild_info if guild_info else "No forums found"
+    async def update_embed(self, interaction: discord.Interaction):
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)

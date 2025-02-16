@@ -217,25 +217,51 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
 @app_commands.check(lambda interaction: interaction.user.id == USER_ID)
 @bot.tree.command(name="stats", description="Get statistics about the bot.")
 async def server_stats(interaction: discord.Interaction):
-    embed = discord.Embed(title="📊 Server Statistics", color=discord.Color.blue())
-    total_guild = len(bot.guilds)
-    embed.add_field(name=utils.pluralize("Total Server", total_guild), value=total_guild, inline=False)
-
-    for guild in bot.guilds:
-        registered_forums = set(await db.get_forums_for_server(guild.id))
-        registered_threads = set(await db.get_posts_for_server(guild.id))
+    guilds = await db.get_servers()
+    total_guild = len(guilds)
+    total_thread = len(await update.get_monitored_posts(bot))
+    
+    embeds = []
+    current_embed = discord.Embed(title="📊 Bot Statistics", color=discord.Color.blue())
+    current_embed.add_field(name=utils.pluralize("Total Server", total_guild), value=total_guild, inline=True)
+    current_embed.add_field(name=utils.pluralize("Total Thread", total_thread), value=total_thread, inline=True)
+    field_count = 2
+    
+    for guild_id in guilds:
+        guild = bot.get_guild(guild_id)
+        if not guild:
+            continue
+        registered_categories = set(await db.get_categories_for_server(guild_id))
+        registered_forums = set(await db.get_forums_for_server(guild_id))
+        registered_threads = set(await db.get_posts_for_server(guild_id))
+        
+        for category_id in registered_categories:
+            category = guild.get_channel(category_id)
+            if category and isinstance(category, discord.CategoryChannel):
+                registered_forums.update(forum.id for forum in category.forums if forum.id not in registered_forums and isinstance(forum, discord.ForumChannel))
         
         total_threads = len(registered_threads)
         for forum_id in registered_forums:
             forum = guild.get_channel(forum_id)
             if forum and isinstance(forum, discord.ForumChannel):
-                total_threads += sum(1 for thread in forum.threads)
+                total_threads += sum(1 for thread in forum.threads if thread not in registered_threads)
 
-        guild_name_with_totals = f"🏠 {guild.name} ({guild.id}) - {total_threads} {utils.pluralize('thread', total_threads)}"
-        guild_info = utils.format_guild_stats(guild, registered_forums, registered_threads)
-        embed.add_field(name=guild_name_with_totals, value=guild_info, inline=False)
+        if field_count >= 25:
+            embeds.append(current_embed)
+            current_embed = discord.Embed(title="📊 Bot Statistics", color=discord.Color.blue())
+            field_count = 0
 
-    await interaction.response.send_message(embed=embed)
+        if total_threads:
+            current_embed.add_field(name=f"🏕️ {guild.name} ({guild_id})", value=f"{total_threads} {utils.pluralize('thread', total_threads)}", inline=False)
+            field_count += 1
+    
+    embeds.append(current_embed)
+
+    if embeds:
+        view = utils.PaginatorView(embeds)
+        await interaction.response.send_message(embed=embeds[0], view=view)
+    else:
+        await interaction.response.send_message("No data found.")
 
 
 def update_on_ready():
