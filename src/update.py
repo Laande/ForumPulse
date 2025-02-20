@@ -13,7 +13,7 @@ async def forum_update(bot):
     tasks = [process_server(server_id, bot) for server_id in server_ids]
     results = await asyncio.gather(*tasks)
     total_time = time.perf_counter() - time_start
-    res_msg = f"Forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 1 else ''} in {time_format(total_time)}."
+    res_msg = f"Forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 1 else ''} in {time_format(total_time)} for {sum(results)} thread{'s' if sum(results) > 1 else ''}."
     
     guild = bot.get_guild(BOT_GUILD_ID)
     channel = guild.get_channel(STATUS_CHANNEL_ID) if guild else None
