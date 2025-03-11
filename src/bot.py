@@ -19,8 +19,12 @@ class MyBot(discord.Client):
         super().__init__(intents=self.intents)
         self.tree = app_commands.CommandTree(self)
         self.scheduler = AsyncIOScheduler()
+        self.ready = False
 
     async def on_ready(self):
+        if self.ready:
+            return
+        self.ready = True
         print(f'Connected as {self.user}')
         await self.tree.sync()
         await db.setup()
@@ -267,6 +271,9 @@ async def server_stats(interaction: discord.Interaction):
 def update_on_ready():
     @bot.event
     async def on_ready():
+        if bot.ready:
+            return
+        bot.ready = True
         await update.forum_update(bot)
 
 
