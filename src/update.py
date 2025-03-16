@@ -107,7 +107,6 @@ async def get_monitored_posts(bot):
         channel = await get_channel(item_id, bot)
         
         if not channel:
-            print(f"Channel {item_id} not found.")
             continue
 
         if category_type == 'forum':
