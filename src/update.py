@@ -4,7 +4,7 @@ import time
 
 from src import db
 from src.utils import get_channel, time_format
-from src.config import EMOJI, BOT_GUILD_ID, STATUS_CHANNEL_ID
+from src.config import BOT_GUILD_ID, STATUS_CHANNEL_ID
 
 
 async def forum_update(bot):
@@ -90,13 +90,6 @@ async def update_post(thread_id: int, bot: discord.Client, already_check: set):
         try:
             await thread.edit(archived=False)
         except discord.errors.Forbidden:
-            pass
-    else:
-        try:
-            message = await thread.fetch_message(thread_id)
-            await message.add_reaction(EMOJI)
-            await message.remove_reaction(EMOJI, bot.user)
-        except discord.errors.NotFound:
             pass
 
 
