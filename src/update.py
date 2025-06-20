@@ -12,8 +12,12 @@ async def forum_update(bot):
     server_ids = await db.get_servers()
     tasks = [process_server(server_id, bot) for server_id in server_ids]
     results = await asyncio.gather(*tasks)
+    
+    active_servers = sum(1 for r in results if r > 0)
+    total_unarchived = sum(results)
+    
     total_time = time.perf_counter() - time_start
-    res_msg = f"Forum update completed for {len(server_ids)} server{'s' if len(server_ids) > 1 else ''} in {time_format(total_time)} for {sum(results)} thread{'s' if sum(results) > 1 else ''}."
+    res_msg = f"Forum update completed: {total_unarchived} thread{'s' if total_unarchived > 1 else ''} unarchived in {active_servers} server{'s' if active_servers > 1 else ''} ({time_format(total_time)})"
     
     guild = bot.get_guild(BOT_GUILD_ID)
     channel = guild.get_channel(STATUS_CHANNEL_ID) if guild else None
@@ -82,15 +86,17 @@ async def update_forum(forum: discord.ForumChannel, bot, already_check: set):
 
 async def update_post(thread_id: int, bot: discord.Client, already_check: set):
     if thread_id in already_check:
-        return
+        return 0
 
     already_check.add(thread_id)
     thread = await bot.fetch_channel(thread_id)
     if thread.archived:
         try:
             await thread.edit(archived=False)
+            return 1
         except discord.errors.Forbidden:
             pass
+    return 0
 
 
 async def get_monitored_posts(bot):
