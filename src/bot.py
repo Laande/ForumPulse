@@ -33,6 +33,7 @@ class MyBot(discord.Client):
         self.update_bot_status.start()
     
     def start_scheduler(self):
+        self.scheduler.add_job(update.forum_update, CronTrigger(hour=0, minute=0, second=0), args=[self])
         self.scheduler.add_job(update.forum_update, CronTrigger(hour=12, minute=0, second=0), args=[self])
         self.scheduler.start()
     
