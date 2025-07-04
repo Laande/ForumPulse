@@ -56,6 +56,16 @@ class MyBot(discord.Client):
         await self.wait_until_ready()
         post_set = await update.get_monitored_posts(self)
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"over {len(post_set)} posts"))
+    
+    async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
+        if not before.archived and after.archived:
+            is_monitored = await db.is_monitored(after.guild.id, after.id)
+            if is_monitored:
+                try:
+                    await after.edit(archived=False)
+                    print(f"[DEBUG] {after.name} ({after.id}) unarchived automatically.")
+                except discord.Forbidden:
+                    pass
 
 
 bot = MyBot()
