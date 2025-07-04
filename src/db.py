@@ -90,8 +90,3 @@ async def list_all_channels():
     async with aiosqlite.connect(DATABASE) as db:
         async with db.execute("SELECT item_id, category_type FROM categories") as cursor:
             return await cursor.fetchall()
-
-
-async def is_monitored(server_id: int, thread_id: int) -> bool:
-    monitored = await get_posts_for_server(server_id)
-    return thread_id in monitored

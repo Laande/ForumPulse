@@ -59,8 +59,8 @@ class MyBot(discord.Client):
     
     async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
         if not before.archived and after.archived:
-            is_monitored = await db.is_monitored(after.guild.id, after.id)
-            if is_monitored:
+            monitored_posts = await update.get_monitored_posts(self)
+            if after.id in monitored_posts:
                 try:
                     await after.edit(archived=False)
                     print(f"[DEBUG] {after.name} ({after.id}) unarchived automatically.")
