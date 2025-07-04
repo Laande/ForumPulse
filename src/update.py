@@ -113,8 +113,11 @@ async def get_monitored_posts(bot: discord.Client) -> set:
         if category_type == 'forum':
             for thread in channel.threads:
                 post_set.add(thread.id)
-            async for thread in channel.archived_threads(limit=None):
-                post_set.add(thread.id)
+            try:
+                async for thread in channel.archived_threads(limit=None):
+                    post_set.add(thread.id)
+            except discord.errors.Forbidden:
+                pass
 
         elif category_type == 'category':
             for forum in channel.channels:
