@@ -90,3 +90,9 @@ async def list_all_channels():
     async with aiosqlite.connect(DATABASE) as db:
         async with db.execute("SELECT item_id, category_type FROM categories") as cursor:
             return await cursor.fetchall()
+
+
+async def list_channels_for_server(server_id: int):
+    async with aiosqlite.connect(DATABASE) as db:
+        async with db.execute("SELECT item_id, category_type FROM categories WHERE server_id = ?", (server_id,)) as cursor:
+            return await cursor.fetchall()

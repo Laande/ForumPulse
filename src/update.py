@@ -101,9 +101,13 @@ async def update_post(thread_id: int, bot: discord.Client) -> bool:
         return False
 
 
-async def get_monitored_posts(bot: discord.Client) -> set:
+async def get_monitored_posts(bot: discord.Client, guild_id: int = None) -> set:
     post_set = set()
-    channels = await db.list_all_channels()
+    if guild_id:
+        channels = await db.list_channels_for_server(guild_id)
+    else:
+        channels = await db.list_all_channels()
+    
     for item_id, category_type in channels:
         channel = await get_channel(item_id, bot)
         

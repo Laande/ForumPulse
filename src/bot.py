@@ -59,7 +59,7 @@ class MyBot(discord.Client):
     
     async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
         if not before.archived and after.archived:
-            monitored_posts = await update.get_monitored_posts(self)
+            monitored_posts = await update.get_monitored_posts(self, after.guild.id)
             if after.id in monitored_posts:
                 try:
                     await after.edit(archived=False)
