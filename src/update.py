@@ -1,30 +1,14 @@
 import discord
 import asyncio
-import time
 
 from src import db
-from src.utils import get_channel, time_format
-from src.config import BOT_GUILD_ID, STATUS_CHANNEL_ID
+from src.utils import get_channel
 
 
 async def forum_update(bot: discord.Client):
-    time_start = time.perf_counter()
     server_ids = await db.get_servers()
     tasks = [process_server(server_id, bot) for server_id in server_ids]
-    results = await asyncio.gather(*tasks)
-    
-    active_servers = sum(1 for r in results if r > 0)
-    total_unarchived = sum(results)
-    
-    total_time = time.perf_counter() - time_start
-    res_msg = f"Forum update completed: {total_unarchived} thread{'s' if total_unarchived > 1 else ''} unarchived in {active_servers} server{'s' if active_servers > 1 else ''} ({time_format(total_time)})"
-
-    guild = bot.get_guild(BOT_GUILD_ID)
-    channel = guild.get_channel(STATUS_CHANNEL_ID) if guild else None
-    if channel:
-        await channel.send(res_msg)
-    else:
-        print(res_msg)
+    await asyncio.gather(*tasks)
 
 
 async def check_still_exist(server_id: int, bot: discord.Client):

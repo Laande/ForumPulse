@@ -34,7 +34,6 @@ class MyBot(discord.Client):
     
     def start_scheduler(self):
         self.scheduler.add_job(update.forum_update, CronTrigger(hour=0, minute=0, second=0), args=[self])
-        self.scheduler.add_job(update.forum_update, CronTrigger(hour=12, minute=0, second=0), args=[self])
         self.scheduler.start()
     
     async def on_guild_join(self, guild: discord.Guild):
@@ -146,7 +145,7 @@ async def autocomplete_post(interaction: discord.Interaction, current: str):
     posts = []
 
     for channel in interaction.guild.channels:
-        if isinstance(channel, discord.ForumChannel):
+        if isinstance(channel, discord.ForumChannel, discord.TextChannel):
             for thread in channel.threads:
                 posts.append(thread)
 
