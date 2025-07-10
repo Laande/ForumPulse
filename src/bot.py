@@ -62,7 +62,6 @@ class MyBot(discord.Client):
             if after.id in monitored_posts:
                 try:
                     await after.edit(archived=False)
-                    print(f"[DEBUG] {after.name} ({after.id}) unarchived automatically.")
                 except discord.Forbidden:
                     pass
 
