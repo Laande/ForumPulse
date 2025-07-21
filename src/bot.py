@@ -298,6 +298,7 @@ def run(start_init = False):
 @app_commands.guild_only()
 @app_commands.checks.has_permissions(manage_channels=True)
 async def permissions_check(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
     guild = interaction.guild
     tracked = await db.list_channels_for_server(guild.id)
     if not tracked:
