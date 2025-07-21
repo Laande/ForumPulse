@@ -97,7 +97,7 @@ def format_perms(perms: list[str]) -> str:
     return ", ".join(f"`{p}`" for p in perms)
 
 
-async def permissions_report(guild: discord.Guild, tracked: list[tuple[int, str]]) -> discord.Embed:
+async def permissions_report(guild: discord.Guild, tracked: list[tuple[int, str]]) -> list[discord.Embed]:
     global_missing = {p for p in PERMISSIONS_TO_CHECK if not getattr(guild.me.guild_permissions, p, False)}
     tracked_by_type = {"category": set(), "forum": set()}
     for item_id, ctype in tracked:
@@ -105,13 +105,12 @@ async def permissions_report(guild: discord.Guild, tracked: list[tuple[int, str]
             tracked_by_type[ctype].add(item_id)
 
     channels_by_id = {c.id: c for c in guild.channels}
-    errors = {"Category": [], "Forum": [], "Channel": []}
+    errors = {"Bot Permissions (Optional)": [], "Category": [], "Forum": [], "Channel": []}
     cat_missing = {}
     forums_in_categories = set()
 
-    embed = discord.Embed(color=discord.Color.orange())
     if global_missing:
-        embed.add_field(name="Global Server Permissions", value=f"Missing: {format_perms(global_missing)}", inline=False)
+        errors["Bot Permissions (Optional)"].append(f"Missing: {format_perms(global_missing)}")
 
     for cat_id in tracked_by_type["category"]:
         category = channels_by_id.get(cat_id)
@@ -119,19 +118,19 @@ async def permissions_report(guild: discord.Guild, tracked: list[tuple[int, str]
             errors["Category"].append(f"Category ID `{cat_id}` not found (maybe deleted?)")
             continue
 
-        missing = check_perms(category, global_missing)
-        cat_missing[cat_id] = set(missing)
-        if missing:
-            errors["Category"].append(f"**{category.name}** missing: {format_perms(missing)}")
+        missing_cat = check_perms(category, global_missing)
+        cat_missing[cat_id] = set(missing_cat)
+        if missing_cat:
+            errors["Category"].append(f"**{category.name}** missing: {format_perms(missing_cat)}")
 
         inherited = global_missing | cat_missing[cat_id]
         for child in category.channels:
             if isinstance(child, discord.ForumChannel):
                 forums_in_categories.add(child.id)
-            missing = check_perms(child, inherited)
-            if missing:
+            missing_child = check_perms(child, inherited)
+            if missing_child:
                 kind = "Forum" if isinstance(child, discord.ForumChannel) else "Channel"
-                errors[kind].append(f"**<#{child.id}>** missing: {format_perms(missing)}")
+                errors[kind].append(f"**<#{child.id}>** missing: {format_perms(missing_child)}")
 
     for forum_id in tracked_by_type["forum"] - forums_in_categories:
         forum = channels_by_id.get(forum_id)
@@ -140,12 +139,29 @@ async def permissions_report(guild: discord.Guild, tracked: list[tuple[int, str]
             continue
 
         inherited = global_missing | cat_missing.get(forum.category_id, set())
-        missing = check_perms(forum, inherited)
-        if missing:
-            errors["Forum"].append(f"**<#{forum.id}>** missing: {format_perms(missing)}")
+        missing_forum = check_perms(forum, inherited)
+        if missing_forum:
+            errors["Forum"].append(f"**<#{forum.id}>** missing: {format_perms(missing_forum)}")
 
-    for kind, lines in errors.items():
-        if lines:
-            embed.add_field(name=f"{kind}s" if len(lines) > 1 else kind, value="\n".join(lines), inline=False)
+    def chunk_list(lst, n):
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
 
-    return embed
+    max_lines_per_field = 15
+    chunked_errors = {kind: list(chunk_list(lines, max_lines_per_field)) for kind, lines in errors.items()}
+
+    max_chunks = max(len(lst) for lst in chunked_errors.values()) if chunked_errors else 0
+
+    embeds = []
+    for i in range(max_chunks):
+        embed = discord.Embed(color=discord.Color.orange(), title="Permissions Issues")
+        for kind, chunks in chunked_errors.items():
+            if i < len(chunks):
+                name = kind if len(chunks[i]) == 1 else f"{kind}s"
+                embed.add_field(name=name, value="\n".join(chunks[i]), inline=False)
+        embeds.append(embed)
+
+    if not embeds:
+        embeds.append(discord.Embed(color=discord.Color.green(), description="✅ The bot has all required permissions in all tracked items."))
+
+    return embeds

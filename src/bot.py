@@ -302,7 +302,11 @@ async def permissions_check(interaction: discord.Interaction):
     guild = interaction.guild
     tracked = await db.list_channels_for_server(guild.id)
     if not tracked:
-        return await interaction.followup.send("⚠️ No tracked channels found for this server.")
+        return await interaction.followup.send("⚠️ No tracked channels found for this server.", ephemeral=True)
 
-    embed = await utils.permissions_report(guild, tracked)
-    await interaction.followup.send(embed=embed, ephemeral=True)
+    embeds = await utils.permissions_report(guild, tracked)
+    if len(embeds) == 1:
+        await interaction.followup.send(embed=embeds[0], ephemeral=True)
+    else:
+        view = utils.PaginatorView(embeds)
+        await interaction.followup.send(embed=embeds[0], view=view, ephemeral=True)
