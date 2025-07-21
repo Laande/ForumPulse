@@ -292,3 +292,16 @@ def run(start_init = False):
     
     token = utils.load_token()
     bot.run(token)
+
+
+@bot.tree.command(name="permissions_check", description="Check the bot permissions.")
+@app_commands.guild_only()
+@app_commands.checks.has_permissions(manage_channels=True)
+async def permissions_check(interaction: discord.Interaction):
+    guild = interaction.guild
+    tracked = await db.list_channels_for_server(guild.id)
+    if not tracked:
+        return await interaction.followup.send("⚠️ No tracked channels found for this server.")
+
+    embed = await utils.permissions_report(guild, tracked)
+    await interaction.followup.send(embed=embed, ephemeral=True)

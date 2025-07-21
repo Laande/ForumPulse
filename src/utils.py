@@ -1,7 +1,7 @@
 import os
 import re
 import discord
-from src.config import TOKEN_FILE
+from src.config import TOKEN_FILE, PERMISSIONS_TO_CHECK
 
 
 def load_token() -> str:
@@ -86,3 +86,66 @@ class PaginatorView(discord.ui.View):
     async def update_embed(self, interaction: discord.Interaction):
         self.update_buttons()
         await interaction.response.edit_message(embed=self.embeds[self.current_page], view=self)
+
+
+def check_perms(channel: discord.abc.GuildChannel, inherited: set[str]) -> list[str]:
+    perms = channel.permissions_for(channel.guild.me)
+    return [p for p in PERMISSIONS_TO_CHECK if not getattr(perms, p, False) and p not in inherited]
+
+
+def format_perms(perms: list[str]) -> str:
+    return ", ".join(f"`{p}`" for p in perms)
+
+
+async def permissions_report(guild: discord.Guild, tracked: list[tuple[int, str]]) -> discord.Embed:
+    global_missing = {p for p in PERMISSIONS_TO_CHECK if not getattr(guild.me.guild_permissions, p, False)}
+    tracked_by_type = {"category": set(), "forum": set()}
+    for item_id, ctype in tracked:
+        if ctype != "post":
+            tracked_by_type[ctype].add(item_id)
+
+    channels_by_id = {c.id: c for c in guild.channels}
+    errors = {"Category": [], "Forum": [], "Channel": []}
+    cat_missing = {}
+    forums_in_categories = set()
+
+    embed = discord.Embed(color=discord.Color.orange())
+    if global_missing:
+        embed.add_field(name="Global Server Permissions", value=f"Missing: {format_perms(global_missing)}", inline=False)
+
+    for cat_id in tracked_by_type["category"]:
+        category = channels_by_id.get(cat_id)
+        if not category:
+            errors["Category"].append(f"Category ID `{cat_id}` not found (maybe deleted?)")
+            continue
+
+        missing = check_perms(category, global_missing)
+        cat_missing[cat_id] = set(missing)
+        if missing:
+            errors["Category"].append(f"**{category.name}** missing: {format_perms(missing)}")
+
+        inherited = global_missing | cat_missing[cat_id]
+        for child in category.channels:
+            if isinstance(child, discord.ForumChannel):
+                forums_in_categories.add(child.id)
+            missing = check_perms(child, inherited)
+            if missing:
+                kind = "Forum" if isinstance(child, discord.ForumChannel) else "Channel"
+                errors[kind].append(f"**<#{child.id}>** missing: {format_perms(missing)}")
+
+    for forum_id in tracked_by_type["forum"] - forums_in_categories:
+        forum = channels_by_id.get(forum_id)
+        if not forum:
+            errors["Forum"].append(f"**<#{forum_id}>** not found (maybe deleted?)")
+            continue
+
+        inherited = global_missing | cat_missing.get(forum.category_id, set())
+        missing = check_perms(forum, inherited)
+        if missing:
+            errors["Forum"].append(f"**<#{forum.id}>** missing: {format_perms(missing)}")
+
+    for kind, lines in errors.items():
+        if lines:
+            embed.add_field(name=f"{kind}s" if len(lines) > 1 else kind, value="\n".join(lines), inline=False)
+
+    return embed
