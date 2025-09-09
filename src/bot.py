@@ -230,6 +230,7 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
 @app_commands.check(lambda interaction: interaction.user.id == USER_ID)
 @bot.tree.command(name="stats", description="Get statistics about the bot.")
 async def server_stats(interaction: discord.Interaction):
+    await interaction.response.defer()
     guilds = await db.get_servers()
     total_guild = len(guilds)
     total_thread = len(await update.get_monitored_posts(bot))
@@ -272,9 +273,9 @@ async def server_stats(interaction: discord.Interaction):
 
     if embeds:
         view = utils.PaginatorView(embeds)
-        await interaction.response.send_message(embed=embeds[0], view=view)
+        await interaction.followup.send(embed=embeds[0], view=view)
     else:
-        await interaction.response.send_message("No data found.")
+        await interaction.followup.send("No data found.")
 
 
 def update_on_ready():
