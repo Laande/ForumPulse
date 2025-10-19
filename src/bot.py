@@ -188,18 +188,18 @@ async def remove_channel(interaction: discord.Interaction, channel: str):
         await interaction.response.send_message(f"<#{channel}> has been removed.")
 
 
-@bot.tree.command(name="info", description="Get information about the bot and its functionalities.")
+@bot.tree.command(name="help", description="Show help information about the bot.")
 async def info(interaction: discord.Interaction):
     info_message = (
-        "This bot is designed to keep forums active.\n"
-        "The bot runs every day to unarchive or add a reaction to all monitored posts and then remove it.\n\n"
+        "This bot is designed to keep forums active\n"
+        "The bot will detect archived post and automatically uncharvied them\n\n"
         "**Commands:** *(They all need manage channels permission)*\n"
-        "- </add_category:1290079934060040272>: Add all forums in the category.\n"
-        "- </add_forum:1290079934060040273>: Add a specific forum.\n"
-        "- </add_post:1290079934060040274>: Add a specific post.\n"
-        "- </list_channels:1290086788114944062>: List all channels.\n"
-        "- </remove_channel:1290086788114944063>: Remove a channel.\n"
-        "- </run_update:1292600854297444362>: Update tracked chanels.\n\n"
+        "- </add_category:1290079934060040272>: Add all forums in the category\n"
+        "- </add_forum:1290079934060040273>: Add a specific forum\n"
+        "- </add_post:1290079934060040274>: Add a specific post\n"
+        "- </list_channels:1290086788114944062>: List all channels\n"
+        "- </remove_channel:1290086788114944063>: Remove a channel\n"
+        "- </run_update:1292600854297444362>: Update tracked chanels\n\n"
         "[Support server](<https://discord.gg/3b3qvn2aTc>)"
     )
     await interaction.response.send_message(info_message)
