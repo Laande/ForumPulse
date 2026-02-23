@@ -3,27 +3,28 @@ import asyncio
 
 from src import db
 from src.utils import get_channel
+from src.config import BATCH_SIZE, ARCHIVED_THREADS_LIMIT
 
 
 async def forum_update(bot: discord.Client):
     server_ids = await db.get_servers()
-    tasks = [process_server(server_id, bot) for server_id in server_ids]
-    await asyncio.gather(*tasks)
+    for i in range(0, len(server_ids), BATCH_SIZE):
+        batch = server_ids[i:i + BATCH_SIZE]
+        tasks = [process_server(server_id, bot) for server_id in batch]
+        await asyncio.gather(*tasks)
 
 
 async def check_still_exist(server_id: int, bot: discord.Client):
-    server_ids = await db.get_servers()
-    for server_id in server_ids:
-        guild = bot.get_guild(server_id)
-        if not guild:
-            await db.remove_server(server_id)
-            continue
+    guild = bot.get_guild(server_id)
+    if not guild:
+        await db.remove_server(server_id)
+        return
 
-        channels = await db.get_channels(server_id)
-        for channel_id in channels['category'] + channels['forum'] + channels['post']:
-            channel = guild.get_channel(channel_id)
-            if not channel:
-                await db.remove_channel(server_id, channel_id)
+    channels = await db.get_channels(server_id)
+    for channel_id in channels['category'] + channels['forum'] + channels['post']:
+        channel = guild.get_channel(channel_id)
+        if not channel:
+            await db.remove_channel(server_id, channel_id)
 
 
 async def process_server(server_id: int, bot: discord.Client) -> int:
@@ -65,11 +66,15 @@ async def update_category(category: discord.CategoryChannel, bot: discord.Client
 async def update_forum(forum: discord.ForumChannel, bot: discord.Client, already_check: set) -> int:
     count = 0
     try:
-        async for thread in forum.archived_threads(limit=None):
+        async for thread in forum.archived_threads(limit=ARCHIVED_THREADS_LIMIT):
             if thread.id not in already_check:
                 already_check.add(thread.id)
-                if await update_post(thread.id, bot):
-                    count += 1
+                if thread.archived:
+                    try:
+                        await thread.edit(archived=False)
+                        count += 1
+                    except (discord.errors.NotFound, discord.errors.Forbidden):
+                        pass
     except discord.errors.Forbidden:
         pass
     return count
@@ -81,8 +86,9 @@ async def update_post(thread_id: int, bot: discord.Client) -> bool:
         if thread.archived:
             await thread.edit(archived=False)
             return True
-    except discord.errors.NotFound:
-        return False
+    except (discord.errors.NotFound, discord.errors.Forbidden):
+        pass
+    return False
 
 
 async def get_monitored_posts(bot: discord.Client, guild_id: int = None) -> set:
@@ -102,7 +108,7 @@ async def get_monitored_posts(bot: discord.Client, guild_id: int = None) -> set:
             for thread in channel.threads:
                 post_set.add(thread.id)
             try:
-                async for thread in channel.archived_threads(limit=None):
+                async for thread in channel.archived_threads(limit=ARCHIVED_THREADS_LIMIT):
                     post_set.add(thread.id)
             except discord.errors.Forbidden:
                 pass
@@ -113,7 +119,7 @@ async def get_monitored_posts(bot: discord.Client, guild_id: int = None) -> set:
                     for thread in forum.threads:
                         post_set.add(thread.id)
                     try:
-                        async for thread in forum.archived_threads(limit=None):
+                        async for thread in forum.archived_threads(limit=ARCHIVED_THREADS_LIMIT):
                             post_set.add(thread.id)
                     except discord.errors.Forbidden:
                         pass

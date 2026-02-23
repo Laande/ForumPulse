@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from src import db, utils, update
-from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID, USER_ID
+from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID, USER_ID, CACHE_DURATION
 
 
 class MyBot(discord.Client):
@@ -20,6 +20,8 @@ class MyBot(discord.Client):
         self.tree = app_commands.CommandTree(self)
         self.scheduler = AsyncIOScheduler()
         self.ready = False
+        self.monitored_cache = {}
+        self.cache_timestamp = {}
 
     async def on_ready(self):
         if self.ready:
@@ -49,6 +51,8 @@ class MyBot(discord.Client):
         if guild_log := bot.get_guild(BOT_GUILD_ID):
             if channel_log := guild_log.get_channel(SERVER_CHANNEL_ID):
                 await channel_log.send(f"❌ Removed from server: **{guild.name}** (ID: {guild.id})")
+        self.monitored_cache.pop(guild.id, None)
+        self.cache_timestamp.pop(guild.id, None)
     
     @tasks.loop(hours=1)
     async def update_bot_status(self):
@@ -56,9 +60,22 @@ class MyBot(discord.Client):
         post_set = await update.get_monitored_posts(self)
         await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"over {len(post_set)} posts"))
     
+    async def get_cached_monitored_posts(self, guild_id: int):
+        import time as time_module
+        now = time_module.time()
+        
+        if guild_id in self.monitored_cache:
+            if now - self.cache_timestamp.get(guild_id, 0) < CACHE_DURATION:
+                return self.monitored_cache[guild_id]
+        
+        monitored = await update.get_monitored_posts(self, guild_id)
+        self.monitored_cache[guild_id] = monitored
+        self.cache_timestamp[guild_id] = now
+        return monitored
+    
     async def on_thread_update(self, before: discord.Thread, after: discord.Thread):
         if not before.archived and after.archived:
-            monitored_posts = await update.get_monitored_posts(self, after.guild.id)
+            monitored_posts = await self.get_cached_monitored_posts(after.guild.id)
             if after.id in monitored_posts:
                 try:
                     await after.edit(archived=False)
