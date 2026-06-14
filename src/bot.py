@@ -12,8 +12,6 @@ from src.config import BOT_GUILD_ID, SERVER_CHANNEL_ID, USER_ID, CACHE_DURATION
 class MyBot(discord.Client):
     intents = discord.Intents.default()
     intents.guilds = True
-    intents.message_content = True
-    intents.reactions = True
 
     def __init__(self):
         super().__init__(intents=self.intents)
